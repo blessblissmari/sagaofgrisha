@@ -98,6 +98,7 @@ return {
         arcade = {                          -- breakout, snake, xonix, shooter...
             fire = { "space", "z", "j" },
             action = { "x", "k" },
+            focus = { "lshift", "rshift" },  -- the shooter: slow and precise flight
         },
         puzzle = {                          -- puyo, match-3, memory, cards...
             rotateCW = { "x", "up", "w" },
@@ -110,6 +111,11 @@ return {
             play = { "return" },
             discard = { "x", "backspace" },
             sort = { "c", "tab" },          -- by rank / by suit
+        },
+        dice = {                            -- the dice game (Farkle, Kingdom Come style)
+            pick = { "space", "up", "w" },  -- take / put back the die under the cursor
+            roll = { "return", "r" },       -- throw the other dice
+            bank = { "x", "b" },            -- write the points down and pass the turn
         },
         fishing = {
             reel = { "space", "j", "return" }, -- hold to raise the bar
@@ -132,6 +138,10 @@ return {
         turnLeft = { "leftshoulder" }, turnRight = { "rightshoulder" },
         use = { "a" }, block = { "y" }, map = { "leftstick" },
         skip = { "leftshoulder" },
+        fire = { "a", "rightshoulder" }, action = { "x" }, focus = { "leftshoulder" }, reel = { "a" },
+        select = { "a" }, play = { "x" }, discard = { "y" }, sort = { "back" },
+        pick = { "a" }, roll = { "x" }, bank = { "y" },
+        laneLeft = { "dpleft", "x" }, laneDown = { "dpdown", "a" }, laneUp = { "dpup", "y" }, laneRight = { "dpright", "b" },
     },
 
     musicVolume = 0.7,

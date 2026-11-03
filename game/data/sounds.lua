@@ -9,8 +9,8 @@ return {
 
     music = {
         calm = { file = "bg/m_bg.mp3", volume = 0.55 },
-        -- "Dj Bewan" hard techno: ~143.5 BPM, first beat at 0.33 s (for beat effects)
-        arcade = { file = "bg/m_arcade.mp3", volume = 0.6, bpm = 143.5, beatOffset = 0.33 },
+        -- "Dj Bewan" hard techno: 143 BPM, first beat at 0.07 s (for beat effects, tools/rhythm_chart.py)
+        arcade = { file = "bg/m_arcade.mp3", volume = 0.6, bpm = 143, beatOffset = 0.07 },
     },
 
     sounds = {
@@ -58,6 +58,9 @@ return {
         card_deal = { file = "sfx/card_deal.ogg", volume = 0.5, pitchVariation = 0.1 },
         chips = { file = "sfx/chips.ogg", volume = 0.5 },
         -- Kenney (CC0): Space Shooter Redux and Boardgame pack
+        -- explosions: "bomb_explosion_8bit" by Luke.RUSTLTD (CC0), "Synthesized explosion" by qubodup (CC0)
+        boom = { file = "sfx/boom8bit.ogg", volume = 0.35, pitchVariation = 0.15, cooldown = 0.04 },
+        boom_big = { file = "sfx/boom_big.ogg", volume = 0.6 },
         laser = { files = { "sfx/laser.ogg", "sfx/laser2.ogg" }, volume = 0.25, pitchVariation = 0.08, cooldown = 0.05 },
         shield_up = { file = "sfx/shield_up.ogg", volume = 0.5 },
         shield_down = { file = "sfx/shield_down.ogg", volume = 0.5 },
