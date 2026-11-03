@@ -59,7 +59,7 @@ game.stage "menu" {
             { "Остров (вид сверху)", go = "island" },
             { "Подземелье (псевдо-3D)", go = "dungeon", transition = "iris" },
             { "Пещера (платформер)", go = "cave" },
-            { "Луг (изометрия, бои прямо на карте)", go = "meadow" },
+            { "Луг (изометрия)", go = "meadow" },
             { "Бой: день", play = "fight_day" },
             { "Бой: закат", play = "fight_sunset" },
             { "Бой: ночь", play = "fight_night" },

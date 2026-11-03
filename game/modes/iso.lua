@@ -177,6 +177,10 @@ function Iso:partyChanged()
     local h = self.hero
     for i, id in ipairs(G().state.party) do
         local x, y = self.trail:at(18 * i)
+        if not x or math.abs(x - h.x) + math.abs(y - h.y) < 4 then
+            -- a fresh start: the pet waits a step behind the hero, not inside him
+            x, y = self:spotNear(h.x - 9 * i, h.y - 9 * i, h.z, 3)
+        end
         local pet = iso.Pet(self, id, x or h.x, y or h.y, self.trail, i)
         self:addActor(pet)
         table.insert(self.pets, pet)
