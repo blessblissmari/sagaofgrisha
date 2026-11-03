@@ -1,0 +1,125 @@
+{
+    "automappingRulesFile": "",
+    "commands": [
+    ],
+    "compatibilityVersion": 1100,
+    "extensionsPath": "extensions",
+    "folders": [
+        "."
+    ],
+    "properties": [
+    ],
+    "propertyTypes": [
+        {
+            "id": 1,
+            "name": "Surface",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "grass",
+                "stone",
+                "wood",
+                "water",
+                "gravel",
+                "tile",
+                "metal",
+                "bones",
+                "mech"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "color": "#ffff5555",
+            "drawFill": true,
+            "id": 2,
+            "members": [
+                { "name": "once", "type": "bool", "value": false },
+                { "name": "interact", "type": "bool", "value": false },
+                { "name": "prompt", "type": "string", "value": "" },
+                { "name": "dialogue", "type": "string", "value": "" },
+                { "name": "go", "type": "string", "value": "" },
+                { "name": "spawn", "type": "string", "value": "" },
+                { "name": "transition", "type": "string", "value": "" },
+                { "name": "sound", "type": "string", "value": "" },
+                { "name": "requires", "type": "string", "value": "" }
+            ],
+            "name": "Trigger",
+            "type": "class",
+            "useAs": [
+                "object"
+            ]
+        },
+        {
+            "color": "#ffffd700",
+            "drawFill": true,
+            "id": 3,
+            "members": [
+                { "name": "item", "type": "string", "value": "" },
+                { "name": "count", "type": "int", "value": 1 },
+                { "name": "ability", "type": "string", "value": "" }
+            ],
+            "name": "Item",
+            "type": "class",
+            "useAs": [
+                "object"
+            ]
+        },
+        {
+            "color": "#ffff00ff",
+            "drawFill": true,
+            "id": 4,
+            "members": [
+                { "name": "mob", "type": "string", "value": "" }
+            ],
+            "name": "Mob",
+            "type": "class",
+            "useAs": [
+                "object"
+            ]
+        },
+        {
+            "color": "#ff55ff55",
+            "drawFill": true,
+            "id": 5,
+            "members": [
+                { "name": "angle", "type": "float", "value": 0 }
+            ],
+            "name": "Spawn",
+            "type": "class",
+            "useAs": [
+                "object"
+            ]
+        },
+        {
+            "color": "#ff00aaff",
+            "drawFill": true,
+            "id": 6,
+            "members": [
+                { "name": "ability", "type": "string", "value": "" },
+                { "name": "item", "type": "string", "value": "" },
+                { "name": "consume", "type": "bool", "value": false }
+            ],
+            "name": "Gate",
+            "type": "class",
+            "useAs": [
+                "object"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 7,
+            "members": [
+                { "name": "solid", "type": "bool", "value": false },
+                { "name": "surface", "propertyType": "Surface", "type": "string", "value": "grass" },
+                { "name": "oneway", "type": "bool", "value": false },
+                { "name": "door", "type": "bool", "value": false }
+            ],
+            "name": "Tile",
+            "type": "class",
+            "useAs": [
+                "tile"
+            ]
+        }
+    ]
+}

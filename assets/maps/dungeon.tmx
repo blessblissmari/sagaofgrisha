@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="16" height="16" tilewidth="64" tileheight="64" infinite="0" nextlayerid="6" nextobjectid="232">
+ <properties>
+  <property name="floor" type="int" value="13"/>
+  <property name="ceiling" type="int" value="4"/>
+  <property name="music" value="calm"/>
+  <property name="fog" value="#101018"/>
+ </properties>
+ <tileset firstgid="1" source="walls.tsx"/>
+ <layer id="1" name="Walls" width="16" height="16">
+  <data encoding="csv">
+2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+2,0,0,0,0,0,0,0,3,0,0,0,0,0,0,2,
+2,0,0,0,0,0,0,0,3,0,0,0,0,0,0,2,
+2,0,0,4,4,0,0,0,7,0,0,0,4,4,0,2,
+2,0,0,4,4,0,0,0,3,0,0,0,4,4,0,2,
+2,0,0,0,0,0,0,0,3,0,0,0,0,0,0,2,
+2,2,2,3,7,2,2,2,3,3,3,7,2,2,2,2,
+2,0,0,0,0,0,0,3,0,0,0,0,0,0,0,2,
+2,0,0,8,0,0,0,3,0,0,0,11,11,0,0,2,
+2,0,0,0,0,0,0,7,0,0,0,11,11,0,0,2,
+2,0,0,0,0,0,0,3,0,0,0,0,0,0,0,2,
+2,3,3,3,3,3,3,3,3,3,7,3,3,3,3,2,
+2,0,0,0,0,0,9,0,0,0,0,0,0,0,0,2,
+2,0,0,11,0,0,0,0,0,0,0,11,0,0,0,2,
+2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,13,
+2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
+</data>
+ </layer>
+ <objectgroup id="2" name="Spawns" color="#55ff55">
+  <object id="200" name="player" type="Spawn" x="160" y="160">
+   <properties>
+    <property name="angle" type="int" value="0"/>
+   </properties>
+   <point/>
+  </object>
+ </objectgroup>
+ <objectgroup id="3" name="Items" color="#ffd700">
+  <object id="210" type="Item" x="864" y="160">
+   <properties>
+    <property name="item" value="potion"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="211" type="Item" x="160" y="608">
+   <properties>
+    <property name="item" value="coin"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="212" type="Item" x="864" y="864">
+   <properties>
+    <property name="item" value="key"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="213" type="Item" x="416" y="864">
+   <properties>
+    <property name="item" value="carrot"/>
+   </properties>
+   <point/>
+  </object>
+ </objectgroup>
+ <objectgroup id="4" name="Mobs" color="#ff00ff">
+  <object id="220" type="Mob" x="672" y="288">
+   <properties>
+    <property name="mob" value="ghost"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="221" type="Mob" x="352" y="608">
+   <properties>
+    <property name="mob" value="slime"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="222" type="Mob" x="864" y="608">
+   <properties>
+    <property name="mob" value="beetle"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="223" type="Mob" x="608" y="864">
+   <properties>
+    <property name="mob" value="ghost"/>
+   </properties>
+   <point/>
+  </object>
+ </objectgroup>
+ <objectgroup id="5" name="Triggers" color="#ff5555">
+  <object id="230" name="exit" type="Trigger" x="896" y="896" width="64" height="64">
+   <properties>
+    <property name="interact" type="bool" value="true"/>
+    <property name="prompt" value="Выйти"/>
+   </properties>
+  </object>
+  <object id="231" name="hall" type="Trigger" x="64" y="448" width="384" height="256">
+   <properties>
+    <property name="once" type="bool" value="true"/>
+    <property name="dialogue" value="Здесь пахнет сыростью и приключениями."/>
+   </properties>
+  </object>
+ </objectgroup>
+</map>

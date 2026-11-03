@@ -1,0 +1,40 @@
+X>--- misc ---<X
+3______________E
+- https://opengameart.org/content/public-domain-pack
+
+
+
+----=> gfx <=----;
+{_____-----______}
+::: _ambient_ :::
+--- Trees
+- https://opengameart.org/content/animated-widelands-trees-blackland
+- https://opengameart.org/content/widelands-trees-greenland
+--- FX
+- https://opengameart.org/content/animated-particle-effects-1
+- https://opengameart.org/content/free-pixel-effects-pack
+- https://opengameart.org/content/smoke-fire-animated-particle-16x16
+- https://opengameart.org/content/pixel-fx-pack
+
+--- UI
+- https://opengameart.org/content/gui-windows-constructor
+- https://opengameart.org/content/gui-dialoguemenu-box
+
+
+-> elements <0--;
+[..--------.....]
+--- Arcade
+- https://opengameart.org/content/arcade-pack
+- https://opengameart.org/content/sci-fi-platformer-tileset
+
+,--> creatures <0;
+/_______________#/
+--- Misc
+- https://opengameart.org/content/various-creatures
+- https://opengameart.org/content/crazy-critters
+
+--- Hero
+- https://opengameart.org/content/samurai-animated
+- https://opengameart.org/content/classic-hero-and-baddies-pack
+- https://opengameart.org/content/forest-boy-platformer-animated-character-24x24
+- https://opengameart.org/content/base-character-spritesheet-16x16

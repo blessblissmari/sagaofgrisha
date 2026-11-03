@@ -1,0 +1,13 @@
+# builds
+*.love
+build/
+web/
+dist/
+# editors and OS
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+# Tiled session files
+*.tiled-session
