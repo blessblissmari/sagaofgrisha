@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
+<link rel="icon" href="data:,">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Сага о Грише — тестовая сборка</title>
   <style>
@@ -55,10 +56,30 @@
   </div>
 </main>
 <script>
+  // Full screen with the keyboard lock (Chrome, Edge, Opera): [Esc] stays in the game as
+  // the pause key, holding [Esc] leaves the full screen. Other browsers: [P] is the pause.
+  function isFullScreen() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
   function goFullScreen() {
+    if (isFullScreen()) {
+      (document.exitFullscreen || document.webkitExitFullscreen || function(){}).call(document);
+      return;
+    }
     var c = document.getElementById("canvas");
-    (c.requestFullscreen || c.webkitRequestFullScreen || c.mozRequestFullScreen || function(){}).call(c);
+    var p = (c.requestFullscreen || c.webkitRequestFullScreen || c.mozRequestFullScreen || function(){}).call(c);
+    var lock = function () { if (navigator.keyboard && navigator.keyboard.lock) navigator.keyboard.lock(["Escape", "F11"]).catch(function(){}); };
+    if (p && p.then) p.then(lock).catch(function(){}); else lock();
+    c.focus();
   }
+  document.addEventListener("fullscreenchange", function () {
+    if (!isFullScreen() && navigator.keyboard && navigator.keyboard.unlock) navigator.keyboard.unlock();
+  });
+  // [F11] in the game = our full screen (with the lock), not the browser's own
+  window.addEventListener("keydown", function (e) {
+    if (e.key === "F11") { e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) goFullScreen(); }
+  }, true);
+  window.addEventListener("keyup", function (e) {
+    if (e.key === "F11") { e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
   var loadingContext = document.getElementById('loadingCanvas').getContext('2d');
   function drawLoadingText(text) {
     var c = loadingContext.canvas;

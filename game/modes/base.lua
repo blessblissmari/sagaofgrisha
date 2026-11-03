@@ -30,6 +30,9 @@ local Mode = class()
 function Mode:init(def)
     self.def = def
     self.name = def.name or def.kind
+    -- keys: the keymap of this kind of gameplay (game.controls[kind]) + the stage's own
+    self.keymap = def.keymap or self.keymap or def.kind
+    self.controls = def.controls
     self.timer = timer.new()
     self.fx = fx.Layer()
     self.time = 0

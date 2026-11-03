@@ -49,7 +49,7 @@ function engine.load(config)
     love.graphics.setDefaultFilter("nearest", "nearest")
     love.graphics.setLineStyle("rough")
     screen.init(config.width, config.height, { pixelPerfect = config.pixelPerfect })
-    input.setBindings(config.keys, config.pad)
+    input.setBindings(config.keys, config.pad, config.keymaps)
     if config.sounds then
         engine.audio.load(config.sounds)
     end

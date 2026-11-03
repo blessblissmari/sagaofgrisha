@@ -208,6 +208,7 @@ function Platformer:spawnObjects()
         if item and not st.collected[key] and not (info and info.ability and st.abilities[info.ability]) then
             local x, y = objectPoint(o)
             local pickup = world:add(Pickup(item, x, y - 2, { count = p.count, objectId = key, scale = info and info.ability and 0.45 or 0.32 }))
+            pickup.press = not (info and info.ability) and g.pickupMode(item, p.pickup) == "press"
             pickup.shadow = false
         end
     end
@@ -573,17 +574,26 @@ function Platformer:update(dt, fromScript)
     self:checkHero(dt)
     self:touchGates(hero, dt)
 
-    -- pick up items by touching them
+    -- pick up items: "auto" ones by touching them, the others with [E]
     local x, y, w, h = hero:getBox()
+    local interact = input.pressed("interact")
+    self.prompt = nil
     for _, p in ipairs(world:query(x - 2, y - 2, w + 4, h + 4, function(e) return e.pickable and not e.delay end)) do
-        p:collect(hero)
+        if not p.press then
+            p:collect(hero)
+        elseif not hero.dying then
+            self.prompt = "Поднять: " .. (p.def.name or p.item)
+            if interact then
+                p:collect(hero)
+                input.consume("interact")
+            end
+        end
     end
 
     -- trigger zones
-    self.prompt = nil
     if not hero.dying then
-        local zone = world.triggers:update(hero, input.pressed("interact"))
-        if zone then
+        local zone = world.triggers:update(hero, not self.prompt and input.pressed("interact"))
+        if zone and not self.prompt then
             local p = zone.properties
             self.prompt = (p.prompt and p.prompt ~= "") and p.prompt or "Осмотреть"
         end

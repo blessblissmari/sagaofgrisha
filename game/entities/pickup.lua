@@ -1,6 +1,7 @@
 -- An item lying on the ground. Map items come from the "Items" layer
--- (point with property item = "carrot", optional count). Mob drops are
--- picked up on touch (auto = true), map items with the interact key.
+-- (point with property item = "carrot", optional count, optional pickup = "auto"|"press").
+-- Two kinds (game.pickupMode): "auto" items are picked up by touch and fly to the
+-- hero when he comes close (coins, food); "press" items wait for the interact key.
 
 local Entity = require("engine.entity")
 local assets = require("engine.assets")
@@ -60,8 +61,16 @@ function Pickup:update(dt)
         end
     elseif self.auto then
         local player = self.world.player
-        if player and not player.dying and self:distanceTo(player) < 16 then
-            self:collect(player)
+        if player and not player.dying then
+            local d = self:distanceTo(player)
+            if d < 16 then
+                self:collect(player)
+            elseif d < (self.magnet or 44) and self.z <= 0 then
+                -- the magnet: closer = faster, like in Stardew Valley
+                local k = math.min(1, dt * (6 + (44 - d) * 0.25))
+                self.x = self.x + (player.x - self.x) * k
+                self.y = self.y + (player.y - 4 - self.y) * k
+            end
         end
     end
 end

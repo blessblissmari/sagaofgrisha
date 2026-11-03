@@ -243,7 +243,13 @@ function scene.update(dt)
             input.lock(false)
         end
     end
-    call(scene.top(), "update", dt)
+    -- the keymap of the scene on top: modes set scene.keymap = their kind,
+    -- menus and overlays without one use the "menu" keys
+    local top = scene.top()
+    if top then
+        input.use(top.keymap or "menu", top.controls)
+    end
+    call(top, "update", dt)
 end
 
 function scene.draw()

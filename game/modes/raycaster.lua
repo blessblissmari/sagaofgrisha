@@ -186,7 +186,8 @@ function Raycaster:loadObjects()
                         local item = props.item or o.name
                         if item and item ~= "" and not st.collected[self:key(o)] then
                             table.insert(self.items, { item = item, count = props.count or 1, cx = cx, cy = cy,
-                                key = self:key(o), phase = love.math.random() * 6 })
+                                key = self:key(o), phase = love.math.random() * 6,
+                                press = g.pickupMode(item, props.pickup) == "press" })
                         end
                     elseif c == "Trigger" or c == "NPC" then
                         local zone = { name = o.name, properties = props, cells = {} }
@@ -451,11 +452,11 @@ function Raycaster:tryMove(dx, dy)
     local nx, ny = self.cx + dx, self.cy + dy
     local tex = self:cell(nx, ny)
     if tex or self:mobAt(nx, ny) then
-        audio.play("stomp", { volume = 0.25, pitch = 0.7 })
-        self.bump = 0.15
-        if tex and self:isDoor(tex) then
-            ui.toast("Дверь. [" .. input.keyName("use") .. "] — открыть")
+        -- bumping into a wall (the hint "[F] Открыть" is shown under a door all the time)
+        if (self.bump or 0) <= 0 then
+            audio.play("stomp", { volume = 0.25, pitch = 0.7 })
         end
+        self.bump = 0.15
         return
     end
     self.cx, self.cy = nx, ny
@@ -474,20 +475,11 @@ end
 
 function Raycaster:enterCell()
     local g = G()
-    -- items are picked up by walking over them
+    -- "auto" items are picked up by walking over them, the others with [F]
     for i = #self.items, 1, -1 do
         local it = self.items[i]
-        if it.cx == self.cx and it.cy == self.cy then
-            local info = g.items[it.item] or { name = it.item }
-            if g.state.inventory:add(it.item, it.count) then
-                table.remove(self.items, i)
-                if it.key then
-                    g.state.collected[it.key] = true
-                end
-                audio.play(it.item == "coin" and "coin" or "pickup")
-                ui.toast("Подобрано: " .. (info.name or it.item) .. (it.count > 1 and (" ×" .. it.count) or ""), { icon = info.icon })
-                self:fire("pickup", it.item, it.count)
-            end
+        if it.cx == self.cx and it.cy == self.cy and not it.press then
+            self:pickItem(it)
         end
     end
     for _, z in ipairs(self:zonesAt(self.cx, self.cy)) do
@@ -500,6 +492,29 @@ function Raycaster:enterCell()
     end
 end
 
+function Raycaster:pickItem(it)
+    local g = G()
+    local info = g.items[it.item] or { name = it.item }
+    if not g.state.inventory:add(it.item, it.count) then
+        audio.play("error")
+        ui.toast("Сумка полна!")
+        return false
+    end
+    for i, other in ipairs(self.items) do
+        if other == it then
+            table.remove(self.items, i)
+            break
+        end
+    end
+    if it.key then
+        g.state.collected[it.key] = true
+    end
+    audio.play(it.item == "coin" and "coin" or "pickup")
+    ui.toast("Подобрано: " .. (info.name or it.item) .. (it.count > 1 and (" ×" .. it.count) or ""), { icon = info.icon })
+    self:fire("pickup", it.item, it.count)
+    return true
+end
+
 -- what is in front: a door, a zone to use, an NPC zone
 function Raycaster:facing()
     local d = DIRS[self.dir]
@@ -508,6 +523,12 @@ end
 
 function Raycaster:useTarget()
     local fx, fy = self:facing()
+    -- an item to pick up: under the feet or right in front
+    for _, it in ipairs(self.items) do
+        if it.press and ((it.cx == self.cx and it.cy == self.cy) or (it.cx == fx and it.cy == fy)) then
+            return "item", it
+        end
+    end
     local tex = self:cell(fx, fy)
     if tex and self:isDoor(tex) then
         return "door", fx, fy, tex
@@ -537,6 +558,8 @@ function Raycaster:use()
             end
         end
         self:openDoor(a, b)
+    elseif kind == "item" then
+        self:pickItem(a)
     elseif kind == "zone" then
         a.fired = true
         g.trigger(self, a, "interact", self)
@@ -661,8 +684,8 @@ function Raycaster:handleInput(dt)
     end
     -- movement (one command can wait while the previous one finishes)
     local cmd
-    if input.pressed("up", true) then cmd = "forward"
-    elseif input.pressed("down", true) then cmd = "back"
+    if input.pressed("forward", true) then cmd = "forward"
+    elseif input.pressed("back", true) then cmd = "back"
     elseif input.pressed("strafeLeft", true) then cmd = "left"
     elseif input.pressed("strafeRight", true) then cmd = "right"
     elseif input.pressed("turnLeft", true) then cmd = "turnL"
@@ -670,8 +693,8 @@ function Raycaster:handleInput(dt)
     end
     -- holding a key keeps walking
     if not cmd and not self.moveT and not self.turnT then
-        if input.down("up") and not input.down("turnLeft") then cmd = "forward"
-        elseif input.down("down") then cmd = "back" end
+        if input.down("forward") and not input.down("turnLeft") then cmd = "forward"
+        elseif input.down("back") then cmd = "back" end
     end
     if cmd then
         self.queued = cmd
@@ -1156,9 +1179,17 @@ function Raycaster:drawHud()
     -- weapon and hints
     local weapon = G().weapon()
     if scene.top() == self then
-        local kind = self:useTarget()
+        local kind, a, b, tex = self:useTarget()
         if kind then
-            ui.keyHint(screen.width / 2, screen.height - 92, "use", kind == "door" and "Открыть" or "Осмотреть")
+            local label = "Осмотреть"
+            if kind == "door" then
+                label = tex == self.lockedTex and (G().state.inventory:has("key") and "Открыть ключом" or "Заперто: нужен ключ") or "Открыть"
+            elseif kind == "item" then
+                label = "Поднять: " .. ((G().items[a.item] or {}).name or a.item)
+            elseif kind == "zone" and a.properties.prompt and a.properties.prompt ~= "" then
+                label = a.properties.prompt
+            end
+            ui.keyHint(screen.width / 2, screen.height - 92, "use", label)
         end
         ui.print(weapon.name or "", 16, screen.height - 64, { font = "small", color = "accent" })
         ui.print("[" .. input.keyName("attack") .. "] / мышь — удар   [" .. input.keyName("block") .. "] блок   ["

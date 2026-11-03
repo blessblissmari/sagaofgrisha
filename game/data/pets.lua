@@ -13,17 +13,18 @@ return {
     bunny = {
         name = "Кашка", sprite = "bunny", steps = "paws", character = "bunny", sideScale = 0.11,
         snore = true,
-        battle = { hp = 24, attack = 5, defense = 1, speed = 7, skills = { "bite", "heal", "defend" } },
+        battle = { hp = 30, attack = 6, defense = 3, speed = 8, skills = { "bite", "hop", "heal", "defend" },
+            growth = { hp = 4, attack = 0.9, defense = 0.5, speed = 0.2 } },
         unit = "bunnies",
     },
     slime = {
         name = "Слизик", sprite = "slime", steps = "paws", scale = 1.5, sideScale = 0.9,
-        battle = { hp = 18, attack = 4, defense = 2, speed = 4, skills = { "bite", "defend" } },
+        battle = { hp = 26, attack = 5, defense = 4, speed = 5, skills = { "bite", "defend" } },
         unit = "slimes",
     },
     ghost = {
         name = "Призрачок", sprite = "ghost", scale = 1.5, sideScale = 0.8, flying = true,
-        battle = { hp = 14, attack = 6, defense = 0, speed = 8, skills = { "attack", "heal" } },
+        battle = { hp = 20, attack = 7, defense = 1, speed = 9, skills = { "bite", "heal" } },
         unit = "ghosts",
     },
 }

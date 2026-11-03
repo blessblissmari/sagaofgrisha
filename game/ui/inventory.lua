@@ -136,9 +136,9 @@ function Bag:update(dt)
         self:close()
         return
     end
-    if input.pressed("left", true) or input.pressed("camLeft") then
+    if input.pressed("left", true) or input.pressed("tabLeft") then
         self:switchTab(-1)
-    elseif input.pressed("right", true) or input.pressed("camRight") then
+    elseif input.pressed("right", true) or input.pressed("tabRight") then
         self:switchTab(1)
     end
     local list = self:list()

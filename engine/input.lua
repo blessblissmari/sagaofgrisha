@@ -10,8 +10,11 @@
 -- never needs changes in the game code.
 
 local input = {
-    bindings = {},    -- action -> { "key", ... }
+    bindings = {},    -- action -> { "key", ... } (common keys + the keymap of the current context)
     padBindings = {}, -- action -> { "gamepadbutton", ... }
+    common = {},      -- keys that work everywhere (menus, dialogues, system)
+    maps = {},        -- context (stage kind: "topdown", "battle"...) -> { action = { keys } }
+    context = nil,    -- the keymap in use, set by the scene on top (scene.keymap)
     locked = false,   -- while true nothing is down/pressed (scene transitions)
     mouse = { x = 0, y = 0, moved = false, wheel = 0, pressed = {}, released = {} },
 }
@@ -36,16 +39,51 @@ local function rebuild()
     end
 end
 
-function input.setBindings(keys, pads)
-    input.bindings = keys or {}
+-- keys: common keys, pads: gamepad buttons, maps: per-context keymaps
+function input.setBindings(keys, pads, maps)
+    input.common = keys or {}
     input.padBindings = pads or {}
+    input.maps = maps or input.maps
+    input.apply()
+end
+
+-- bindings = common keys, then the keymap of the context, then the stage overrides
+function input.apply()
+    local b = {}
+    for action, keys in pairs(input.common) do
+        b[action] = keys
+    end
+    for action, keys in pairs(input.maps[input.context] or {}) do
+        b[action] = keys
+    end
+    for action, keys in pairs(input.extra or {}) do
+        b[action] = keys
+    end
+    input.bindings = b
     rebuild()
 end
 
--- Change one action at runtime: input.bind("attack", { "space", "j" })
-function input.bind(action, keys)
-    input.bindings[action] = keys
-    rebuild()
+-- Switches the keymap: input.use("raycaster", { attack = { "k" } }).
+-- The scene stack calls it every frame with the top scene's keymap and controls.
+function input.use(context, extra)
+    if context == input.context and extra == input.extra then
+        return
+    end
+    input.context, input.extra = context, extra
+    input.apply()
+end
+
+-- Change one action at runtime: input.bind("attack", { "space", "j" }) changes it in
+-- the current keymap, input.bind("attack", keys, "common") everywhere.
+function input.bind(action, keys, context)
+    context = context or input.context
+    if context == "common" or not context then
+        input.common[action] = keys
+    else
+        input.maps[context] = input.maps[context] or {}
+        input.maps[context][action] = keys
+    end
+    input.apply()
 end
 
 -- callbacks (main.lua forwards LOVE events here) ----------------------------
@@ -165,12 +203,27 @@ local KEY_NAMES = {
     rshift = "Shift", tab = "Tab", backspace = "Backspace", lctrl = "Ctrl",
     up = "↑", down = "↓", left = "←", right = "→",
 }
+local function nameOf(key)
+    return KEY_NAMES[key] or key:upper()
+end
 function input.keyName(action)
     local key = (input.bindings[action] or {})[1]
     if not key then
         return "?"
     end
-    return KEY_NAMES[key] or key:upper()
+    return nameOf(key)
+end
+
+-- All keys of an action: "Пробел/J" (at most n of them)
+function input.keyNames(action, n)
+    local names = {}
+    for i, key in ipairs(input.bindings[action] or {}) do
+        if i > (n or 2) then
+            break
+        end
+        table.insert(names, nameOf(key))
+    end
+    return #names > 0 and table.concat(names, "/") or "?"
 end
 
 -- Called by the engine at the end of every frame.

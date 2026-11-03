@@ -23,6 +23,20 @@ game.player.equipment = { weapon = "sword", body = "leather" }
 --   game.characters.bunny.voice = { "kid", 520 }   -- тип и высота тона в Гц
 game.characters.bunny.voice = "animal"
 
+-- Управление: у каждого вида геймплея своя раскладка (все раскладки — в game/config.lua):
+--   game.controls.common      — везде (меню, диалоги, пауза, сумка)
+--   game.controls.topdown, .platformer, .raycaster, .battle, .novel, .tetris, .arcade, .puzzle...
+-- Например:
+--   game.controls.topdown.attack = { "space", "j" }
+--   game.controls.raycaster.map = { "m", "tab" }
+-- Или только в одном этапе: game.stage "boss" { kind = "battle", controls = { parry = { "f" } } }
+-- Подсказки на экране ([Пробел] удар...) сами берут клавиши из раскладки.
+
+-- Предметы на земле поднимаются двумя способами (game/data/items.lua, поле pickup):
+--   "auto"  — просто пройти по нему (монеты, еда, камни; подлетают к герою сами)
+--   "press" — подойти и нажать [E] (оружие, броня, ключи, письма)
+-- В Tiled у предмета можно задать свойство pickup = auto/press.
+
 -- Тексты писем/записок (предмет letter открывается в сумке)
 game.notes.letter = "Гриша!\n\nЕсли читаешь это — значит, ты всё-таки открыл сумку. "
     .. "Загляни в подземелье к северу от острова. Там темно, сыро и полно слизней.\n\n— Кашка"
@@ -147,12 +161,23 @@ game.stage "island" {
                 s:give("carrot", 1)
             end
         end,
+        -- конец моста: «вход платный — одна партия в тетрис» (см. табличку sign в Tiled)
         test_trigger = function(s)
+            if s:flag("bridge_paid") then
+                s:say("grisha", "За мостом только море... {p}Пока что.")
+                return
+            end
             s:emote("grisha", "?")
-            local a = s:ask("Отдохнуть немного?", { "Да", "Нет" })
+            local a = s:ask("Сторож моста: «Хочешь пройти — сыграй партию в тетрис!»", { "Играть", "Не сейчас" })
             if a == 1 then
-                s:daytime("evening")
-                s:say("grisha", "Красивый закат...")
+                local r = s:play("tetris")
+                if r.win then
+                    s:flag("bridge_paid", true)
+                    s:say("grisha", "{wave}Есть!{/} Три линии — и мост мой.")
+                    s:give("coin", 5)
+                else
+                    s:say("grisha", "Эх... {shake}ещё разок{/} потом попробую.")
+                end
             end
         end,
     },

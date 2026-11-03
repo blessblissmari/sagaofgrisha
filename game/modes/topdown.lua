@@ -151,7 +151,7 @@ function TopDown:spawnObjects()
         local key = self:key(o)
         if item and not st.collected[key] and not (g.items[item] and g.items[item].ability and st.abilities[g.items[item].ability]) then
             local x, y = objectPoint(o)
-            world:add(Pickup(item, x, y, { count = p.count, objectId = key }))
+            world:add(Pickup(item, x, y, { count = p.count, objectId = key, auto = g.pickupMode(item, p.pickup) == "auto" }))
         end
     end
     for _, o in ipairs(world:objectsOf("Mob")) do
@@ -510,7 +510,7 @@ function TopDown:update(dt, fromScript)
     end)
     self.nearby = nil
     if pickup and not player.dying then
-        self.prompt = "Поднять"
+        self.prompt = "Поднять: " .. (pickup.def.name or pickup.item)
         self.nearby = pickup
         if interact then
             pickup:collect(player)

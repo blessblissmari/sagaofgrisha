@@ -18,8 +18,15 @@ local audio = engine.audio
 local scene = engine.scene
 local util = engine.util
 
+local config = require("game.config")
+
 local game = {
     title = "Game",
+    -- keys: game.controls.common (everywhere) and one keymap per kind of gameplay:
+    --   game.controls.topdown.attack = { "space", "j" }
+    --   game.controls.raycaster.map = { "m", "tab" }
+    config = config,
+    controls = config.keymaps,
     start = nil,
     stages = {},
     defaults = { transition = "fade" },
@@ -29,8 +36,10 @@ local game = {
         sprite = "grisha", side = "hero_side",
         items = {}, party = {}, abilities = {},
         equipment = {}, -- { weapon = "sword", body = "tunic" }: put on at the start
-        battle = { hp = 34, attack = 7, defense = 2, speed = 5,
-            skills = { "attack", "stone", "defend", "item", "flee" } },
+        -- battle stats at level 1; growth = added every level
+        battle = { hp = 40, attack = 8, defense = 4, speed = 6,
+            skills = { "attack", "smash", "skills", "item", "defend", "flee" },
+            growth = { hp = 5, attack = 1.1, defense = 0.6, speed = 0.15 } },
         unit = "heroes",
     },
     sprites = require("game.data.sprites"),
@@ -39,6 +48,11 @@ local game = {
     mobs = require("game.data.mobs"),
     pets = require("game.data.pets"),
     skills = require("game.data.skills"),
+    statuses = require("game.data.statuses"),
+    -- battle settings (story.lua can change them):
+    --   atb     "active": the timeline creeps on (slowly) while you choose; "wait": it stops
+    --   timing  windows of the action commands: 1.4 easy, 1 normal, 0.75 hard
+    battle = { atb = "active", timing = 1, fast = 2.5 },
     units = require("game.data.units"),
     jokers = require("game.data.jokers"),
     backgrounds = require("game.data.backgrounds"),
@@ -57,6 +71,8 @@ local game = {
         cards = "game.modes.cards",
     },
 }
+
+game.controls.common = config.keys
 
 -- story.lua helpers --------------------------------------------------------------
 
@@ -159,6 +175,8 @@ function game.newGame()
         hero = util.deepCopy(p.battle),
     }
     st.hero.maxHp = st.hero.hp
+    st.hero.level, st.hero.xp = p.level or 1, 0
+    st.hero.bp = 1
     game.state = st
     for id, n in pairs(p.items or {}) do
         st.inventory:add(id, n)
@@ -208,6 +226,28 @@ function game.itemKind(id)
         return "key"
     end
     return "item"
+end
+
+-- How an item is picked up from the ground:
+--   "auto"  just walk over it (coins, food, stones...) - it even flies to the hero
+--   "press" stand next to it and press [E] (weapons, armor, keys, letters, abilities)
+-- items.lua: pickup = "auto" | "press"; a map object can override it (property pickup).
+function game.pickupMode(id, override)
+    if override == "auto" or override == "press" then
+        return override
+    end
+    local info = game.items[id]
+    if not info then
+        return "auto"
+    end
+    if info.pickup then
+        return info.pickup
+    end
+    local kind = info.kind or "item"
+    if kind == "weapon" or kind == "armor" or kind == "key" or info.read then
+        return "press"
+    end
+    return "auto"
 end
 
 function game.slotOf(id)
@@ -278,6 +318,7 @@ function game.addPet(id)
     if not st.pets[id] then
         local b = util.deepCopy(game.pets[id].battle or { hp = 10, attack = 3, defense = 1, speed = 5, skills = { "attack" } })
         b.maxHp = b.hp
+        b.level, b.xp = b.level or 1, 0
         st.pets[id] = b
     end
     return true
