@@ -2,665 +2,665 @@
 <tileset version="1.10" tiledversion="1.10.2" name="tinytactics" tilewidth="32" tileheight="32" tilecount="208" columns="16">
  <grid orientation="isometric" width="32" height="16"/>
  <image source="tinytactics.png" width="512" height="416"/>
- <tile id="1">
+ <tile id="1" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
   </properties>
  </tile>
- <tile id="8">
+ <tile id="8" type="IsoTile">
   <properties>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="9">
+ <tile id="9" type="IsoTile">
   <properties>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="10">
+ <tile id="10" type="IsoTile">
   <properties>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="11">
+ <tile id="11" type="IsoTile">
   <properties>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="12">
-  <properties>
-   <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="gravel"/>
-  </properties>
- </tile>
- <tile id="13">
+ <tile id="12" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="14">
+ <tile id="13" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="15">
+ <tile id="14" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="16">
+ <tile id="15" type="IsoTile">
+  <properties>
+   <property name="height" type="float" value="0.5"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
+  </properties>
+ </tile>
+ <tile id="16" type="IsoTile">
   <properties>
    <property name="low" type="float" value="0.2"/>
-   <property name="ramp" value="ne"/>
-   <property name="surface" value="stone"/>
+   <property name="ramp" propertytype="Ramp" value="ne"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="17">
+ <tile id="17" type="IsoTile">
   <properties>
    <property name="low" type="float" value="0.2"/>
-   <property name="ramp" value="nw"/>
-   <property name="surface" value="stone"/>
+   <property name="ramp" propertytype="Ramp" value="nw"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="24">
+ <tile id="24" type="IsoTile">
   <properties>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="25">
+ <tile id="25" type="IsoTile">
   <properties>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="26">
+ <tile id="26" type="IsoTile">
   <properties>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="27">
+ <tile id="27" type="IsoTile">
   <properties>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="28">
+ <tile id="28" type="IsoTile">
   <properties>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="29">
-  <properties>
-   <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="gravel"/>
-  </properties>
- </tile>
- <tile id="30">
+ <tile id="29" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="31">
+ <tile id="30" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="32">
+ <tile id="31" type="IsoTile">
   <properties>
-   <property name="surface" value="water"/>
+   <property name="height" type="float" value="0.5"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
+  </properties>
+ </tile>
+ <tile id="32" type="IsoTile">
+  <properties>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="33">
+ <tile id="33" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="water"/>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="34">
+ <tile id="34" type="IsoTile">
   <properties>
-   <property name="surface" value="water"/>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="35">
+ <tile id="35" type="IsoTile">
   <properties>
-   <property name="surface" value="water"/>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="36">
+ <tile id="36" type="IsoTile">
   <properties>
-   <property name="surface" value="water"/>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="37">
+ <tile id="37" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="water"/>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="38">
+ <tile id="38" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="water"/>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="39">
+ <tile id="39" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="water"/>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="40">
+ <tile id="40" type="IsoTile">
   <properties>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="41">
+ <tile id="41" type="IsoTile">
   <properties>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="42">
+ <tile id="42" type="IsoTile">
   <properties>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="43">
+ <tile id="43" type="IsoTile">
   <properties>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="44">
+ <tile id="44" type="IsoTile">
   <properties>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="45">
-  <properties>
-   <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="gravel"/>
-  </properties>
- </tile>
- <tile id="46">
+ <tile id="45" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="47">
+ <tile id="46" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="gravel"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
   </properties>
  </tile>
- <tile id="48">
+ <tile id="47" type="IsoTile">
+  <properties>
+   <property name="height" type="float" value="0.5"/>
+   <property name="surface" propertytype="Surface" value="gravel"/>
+  </properties>
+ </tile>
+ <tile id="48" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="49">
+ <tile id="49" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="50">
+ <tile id="50" type="IsoTile">
   <properties>
-   <property name="surface" value="water"/>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="52">
+ <tile id="52" type="IsoTile">
   <properties>
-   <property name="surface" value="water"/>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="53">
+ <tile id="53" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="water"/>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="55">
+ <tile id="55" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="water"/>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="62">
+ <tile id="62" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
   </properties>
  </tile>
- <tile id="63">
+ <tile id="63" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
   </properties>
  </tile>
- <tile id="64">
+ <tile id="64" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="65">
+ <tile id="65" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="66">
+ <tile id="66" type="IsoTile">
   <properties>
-   <property name="surface" value="water"/>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="67">
+ <tile id="67" type="IsoTile">
   <properties>
-   <property name="surface" value="water"/>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="68">
+ <tile id="68" type="IsoTile">
   <properties>
-   <property name="surface" value="water"/>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="69">
+ <tile id="69" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="water"/>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="70">
+ <tile id="70" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="water"/>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="71">
+ <tile id="71" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="water"/>
+   <property name="surface" propertytype="Surface" value="water"/>
    <property name="water" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="78">
+ <tile id="78" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
   </properties>
  </tile>
- <tile id="79">
+ <tile id="79" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
   </properties>
  </tile>
- <tile id="80">
+ <tile id="80" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="81">
+ <tile id="81" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="82">
+ <tile id="82" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="wood"/>
+   <property name="surface" propertytype="Surface" value="wood"/>
   </properties>
  </tile>
- <tile id="83">
+ <tile id="83" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="wood"/>
+   <property name="surface" propertytype="Surface" value="wood"/>
   </properties>
  </tile>
- <tile id="84">
+ <tile id="84" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="wood"/>
+   <property name="surface" propertytype="Surface" value="wood"/>
   </properties>
  </tile>
- <tile id="85">
+ <tile id="85" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="wood"/>
+   <property name="surface" propertytype="Surface" value="wood"/>
   </properties>
  </tile>
- <tile id="86">
+ <tile id="86" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="wood"/>
+   <property name="surface" propertytype="Surface" value="wood"/>
   </properties>
  </tile>
- <tile id="87">
+ <tile id="87" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="wood"/>
+   <property name="surface" propertytype="Surface" value="wood"/>
   </properties>
  </tile>
- <tile id="88">
+ <tile id="88" type="IsoTile">
   <properties>
-   <property name="surface" value="stone"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="89">
+ <tile id="89" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="stone"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="96">
+ <tile id="96" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="97">
+ <tile id="97" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="98">
+ <tile id="98" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="99">
+ <tile id="99" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="100">
+ <tile id="100" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="101">
+ <tile id="101" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="wood"/>
+   <property name="surface" propertytype="Surface" value="wood"/>
   </properties>
  </tile>
- <tile id="102">
+ <tile id="102" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="wood"/>
+   <property name="surface" propertytype="Surface" value="wood"/>
   </properties>
  </tile>
- <tile id="103">
+ <tile id="103" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="wood"/>
+   <property name="surface" propertytype="Surface" value="wood"/>
   </properties>
  </tile>
- <tile id="112">
+ <tile id="112" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="114">
+ <tile id="114" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="115">
+ <tile id="115" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="116">
+ <tile id="116" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="117">
+ <tile id="117" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="wood"/>
+   <property name="surface" propertytype="Surface" value="wood"/>
   </properties>
  </tile>
- <tile id="118">
+ <tile id="118" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="wood"/>
+   <property name="surface" propertytype="Surface" value="wood"/>
   </properties>
  </tile>
- <tile id="119">
+ <tile id="119" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="wood"/>
+   <property name="surface" propertytype="Surface" value="wood"/>
   </properties>
  </tile>
- <tile id="120">
+ <tile id="120" type="IsoTile">
   <properties>
-   <property name="surface" value="stone"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="121">
+ <tile id="121" type="IsoTile">
   <properties>
-   <property name="surface" value="stone"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="122">
+ <tile id="122" type="IsoTile">
   <properties>
-   <property name="surface" value="stone"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="123">
-  <properties>
-   <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="stone"/>
-  </properties>
- </tile>
- <tile id="124">
+ <tile id="123" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="stone"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="125">
+ <tile id="124" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="stone"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="128">
+ <tile id="125" type="IsoTile">
+  <properties>
+   <property name="height" type="float" value="0.5"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
+  </properties>
+ </tile>
+ <tile id="128" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="129">
+ <tile id="129" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="130">
+ <tile id="130" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
   </properties>
  </tile>
- <tile id="131">
-  <properties>
-   <property name="height" type="float" value="0"/>
-   <property name="solid" type="bool" value="true"/>
-  </properties>
- </tile>
- <tile id="132">
-  <properties>
-   <property name="height" type="float" value="0"/>
-  </properties>
- </tile>
- <tile id="136">
-  <properties>
-   <property name="surface" value="stone"/>
-  </properties>
- </tile>
- <tile id="137">
-  <properties>
-   <property name="surface" value="stone"/>
-  </properties>
- </tile>
- <tile id="138">
-  <properties>
-   <property name="surface" value="stone"/>
-  </properties>
- </tile>
- <tile id="139">
-  <properties>
-   <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="stone"/>
-  </properties>
- </tile>
- <tile id="140">
-  <properties>
-   <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="stone"/>
-  </properties>
- </tile>
- <tile id="141">
-  <properties>
-   <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="stone"/>
-  </properties>
- </tile>
- <tile id="145">
+ <tile id="131" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="147">
+ <tile id="132" type="IsoTile">
+  <properties>
+   <property name="height" type="float" value="0"/>
+  </properties>
+ </tile>
+ <tile id="136" type="IsoTile">
+  <properties>
+   <property name="surface" propertytype="Surface" value="stone"/>
+  </properties>
+ </tile>
+ <tile id="137" type="IsoTile">
+  <properties>
+   <property name="surface" propertytype="Surface" value="stone"/>
+  </properties>
+ </tile>
+ <tile id="138" type="IsoTile">
+  <properties>
+   <property name="surface" propertytype="Surface" value="stone"/>
+  </properties>
+ </tile>
+ <tile id="139" type="IsoTile">
+  <properties>
+   <property name="height" type="float" value="0.5"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
+  </properties>
+ </tile>
+ <tile id="140" type="IsoTile">
+  <properties>
+   <property name="height" type="float" value="0.5"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
+  </properties>
+ </tile>
+ <tile id="141" type="IsoTile">
+  <properties>
+   <property name="height" type="float" value="0.5"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
+  </properties>
+ </tile>
+ <tile id="145" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
    <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="152">
+ <tile id="147" type="IsoTile">
   <properties>
-   <property name="surface" value="stone"/>
+   <property name="height" type="float" value="0"/>
+   <property name="solid" type="bool" value="true"/>
   </properties>
  </tile>
- <tile id="153">
+ <tile id="152" type="IsoTile">
   <properties>
-   <property name="surface" value="stone"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="154">
+ <tile id="153" type="IsoTile">
   <properties>
-   <property name="surface" value="stone"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="155">
+ <tile id="154" type="IsoTile">
+  <properties>
+   <property name="surface" propertytype="Surface" value="stone"/>
+  </properties>
+ </tile>
+ <tile id="155" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="stone"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="156">
+ <tile id="156" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="stone"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="157">
+ <tile id="157" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0.5"/>
-   <property name="surface" value="stone"/>
+   <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="160">
+ <tile id="160" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
   </properties>
  </tile>
- <tile id="161">
+ <tile id="161" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
   </properties>
  </tile>
- <tile id="162">
+ <tile id="162" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
   </properties>
  </tile>
- <tile id="163">
+ <tile id="163" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
   </properties>
  </tile>
- <tile id="164">
+ <tile id="164" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
   </properties>
  </tile>
- <tile id="176">
+ <tile id="176" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
   </properties>
  </tile>
- <tile id="177">
+ <tile id="177" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
   </properties>
  </tile>
- <tile id="178">
+ <tile id="178" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
   </properties>
  </tile>
- <tile id="179">
+ <tile id="179" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
   </properties>
  </tile>
- <tile id="192">
+ <tile id="192" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
   </properties>
  </tile>
- <tile id="193">
+ <tile id="193" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
   </properties>
  </tile>
- <tile id="194">
+ <tile id="194" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
   </properties>
  </tile>
- <tile id="195">
+ <tile id="195" type="IsoTile">
   <properties>
    <property name="height" type="float" value="0"/>
   </properties>

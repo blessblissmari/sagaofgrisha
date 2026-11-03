@@ -230,7 +230,7 @@ end
 -- Gates -> Gate, NPCs -> NPC. So both ways of marking up a map work.
 local LAYER_CLASSES = {
     Spawns = "Spawn", Items = "Item", Mobs = "Mob", Triggers = "Trigger",
-    Gates = "Gate", NPCs = "NPC", Collision = "Collision", Surfaces = "Surface",
+    Gates = "Gate", NPCs = "NPC", NPC = "NPC", Collision = "Collision", Surfaces = "Surface",
 }
 
 function World:objectsOf(className)

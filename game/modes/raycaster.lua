@@ -172,7 +172,8 @@ function Raycaster:loadObjects()
                     end
                     local props = o.properties or {}
                     local w, h = o.width or 0, o.height or 0
-                    local cx, cy = math.floor((o.x + w / 2) / ts), math.floor((o.y + h / 2) / ts)
+                    local top = o.gid and (o.y - h) or o.y -- tile objects: y is the bottom
+                    local cx, cy = math.floor((o.x + w / 2) / ts), math.floor((top + h / 2) / ts)
                     if c == "Spawn" then
                         local a = tonumber(props.angle) or 0
                         local dir = ({ [0] = 1, [90] = 2, [180] = 3, [270] = 4 })[math.floor(a % 360)] or 1
@@ -191,9 +192,9 @@ function Raycaster:loadObjects()
                         end
                     elseif c == "Trigger" or c == "NPC" then
                         local zone = { name = o.name, properties = props, cells = {} }
-                        local x0, y0 = math.floor(o.x / ts), math.floor(o.y / ts)
+                        local x0, y0 = math.floor(o.x / ts), math.floor(top / ts)
                         local x1 = math.max(x0, math.ceil((o.x + w) / ts) - 1)
-                        local y1 = math.max(y0, math.ceil((o.y + h) / ts) - 1)
+                        local y1 = math.max(y0, math.ceil((top + h) / ts) - 1)
                         for yy = y0, y1 do
                             for xx = x0, x1 do
                                 zone.cells[yy * 1000 + xx] = true

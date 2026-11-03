@@ -1,11 +1,22 @@
 {
     "automappingRulesFile": "",
     "commands": [
+        {
+            "arguments": ". \"--map=%mapfile\"",
+            "command": "love",
+            "enabled": true,
+            "name": "Играть карту (LÖVE)",
+            "saveBeforeExecute": true,
+            "shortcut": "F5",
+            "showOutput": true,
+            "workingDirectory": "%projectpath/../.."
+        }
     ],
     "compatibilityVersion": 1100,
     "extensionsPath": "extensions",
     "folders": [
-        "."
+        ".",
+        "../tiles"
     ],
     "properties": [
     ],
@@ -16,32 +27,414 @@
             "storageType": "string",
             "type": "enum",
             "values": [
-                "grass",
-                "stone",
-                "wood",
-                "water",
-                "gravel",
-                "tile",
-                "metal",
                 "bones",
-                "mech"
+                "grass",
+                "gravel",
+                "mech",
+                "metal",
+                "paws",
+                "stone",
+                "tile",
+                "water",
+                "wood"
             ],
             "valuesAsFlags": false
         },
         {
+            "id": 2,
+            "name": "MobKind",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "beetle",
+                "blob_blue",
+                "blob_red",
+                "crab",
+                "frog",
+                "ghost",
+                "ghost_blue",
+                "iso_mage",
+                "iso_ninja",
+                "iso_samurai",
+                "iso_slime",
+                "ninja",
+                "pumpkin",
+                "saw",
+                "slime",
+                "snail"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "id": 3,
+            "name": "ItemId",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "axe",
+                "boots",
+                "bread",
+                "carrot",
+                "clover",
+                "coin",
+                "dagger",
+                "dash",
+                "double_jump",
+                "ether",
+                "fists",
+                "gold_key",
+                "hat",
+                "helmet",
+                "key",
+                "knight_sword",
+                "leather",
+                "letter",
+                "mail",
+                "map",
+                "mushroom",
+                "potion",
+                "ring",
+                "spear",
+                "stick",
+                "stone",
+                "sword",
+                "torch",
+                "tunic",
+                "wall_jump"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "id": 4,
+            "name": "Ability",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "dash",
+                "double_jump",
+                "wall_jump"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "id": 5,
+            "name": "SpriteName",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "balloon",
+                "beet",
+                "beetle",
+                "blob_blue",
+                "blob_red",
+                "bunny",
+                "coin",
+                "crab",
+                "crab_purple",
+                "frog",
+                "ghost",
+                "ghost_blue",
+                "grisha",
+                "hero_side",
+                "iso_adventurer",
+                "iso_bald",
+                "iso_cleric",
+                "iso_gunner",
+                "iso_hero",
+                "iso_hood",
+                "iso_knight",
+                "iso_mage",
+                "iso_ninja",
+                "iso_pirate",
+                "iso_samurai",
+                "iso_spartan",
+                "iso_spearman",
+                "iso_viking",
+                "ninja",
+                "owl",
+                "pillar",
+                "puff",
+                "pumpkin",
+                "radish",
+                "radish_white",
+                "robot",
+                "saw",
+                "slime",
+                "snail",
+                "soldier",
+                "sparkle"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "id": 6,
+            "name": "Stage",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "cave",
+                "dungeon",
+                "fight_day",
+                "fight_dungeon",
+                "fight_night",
+                "fight_sunset",
+                "island",
+                "meadow",
+                "menu",
+                "prologue",
+                "tetris",
+                "transitions"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "id": 7,
+            "name": "Music",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "arcade",
+                "calm"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "id": 8,
+            "name": "Sound",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "alien",
+                "bdoom",
+                "bell",
+                "bell2",
+                "blink",
+                "blip",
+                "bonus",
+                "brick",
+                "brick_break",
+                "capture",
+                "card_deal",
+                "card_flip",
+                "chain",
+                "chips",
+                "coin",
+                "cool",
+                "crumble",
+                "dash",
+                "death",
+                "die",
+                "door",
+                "dzing",
+                "error",
+                "explode",
+                "fa",
+                "fall",
+                "fanfare",
+                "favsong",
+                "hit",
+                "horn",
+                "hurt",
+                "illuminati",
+                "jump",
+                "lag",
+                "land",
+                "litvin",
+                "longsad",
+                "lowhp",
+                "outro",
+                "pickup",
+                "pop",
+                "portal",
+                "powerup",
+                "punch",
+                "puyo_pop",
+                "rizz",
+                "snore",
+                "sos",
+                "stomp",
+                "swing",
+                "t_drop",
+                "t_hold",
+                "t_level",
+                "t_line",
+                "t_lock",
+                "t_move",
+                "t_rotate",
+                "taunt",
+                "throw",
+                "ui_back",
+                "ui_error",
+                "ui_move",
+                "ui_pause",
+                "ui_select",
+                "ui_text",
+                "unlock",
+                "viu",
+                "what",
+                "zap"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "id": 9,
+            "name": "Transition",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "battle",
+                "blinds",
+                "circle",
+                "clock",
+                "crossfade",
+                "diamond",
+                "dissolve",
+                "fade",
+                "flash",
+                "iris",
+                "page",
+                "pixel",
+                "slide",
+                "starwars",
+                "swirl",
+                "wave",
+                "wipe"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "id": 10,
+            "name": "Background",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "black",
+                "cliffs",
+                "forest",
+                "hills",
+                "mountains",
+                "night",
+                "snowy"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "id": 11,
+            "name": "Facing",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "down",
+                "up",
+                "left",
+                "right",
+                "se",
+                "sw",
+                "ne",
+                "nw"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "id": 12,
+            "name": "Pickup",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "auto",
+                "press"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "id": 13,
+            "name": "Ramp",
+            "storageType": "string",
+            "type": "enum",
+            "values": [
+                "ne",
+                "nw",
+                "se",
+                "sw"
+            ],
+            "valuesAsFlags": false
+        },
+        {
+            "color": "#ff55ff55",
+            "drawFill": true,
+            "id": 14,
+            "members": [
+                {
+                    "name": "angle",
+                    "type": "float",
+                    "value": 0
+                }
+            ],
+            "name": "Spawn",
+            "type": "class",
+            "useAs": [
+                "object"
+            ]
+        },
+        {
             "color": "#ffff5555",
             "drawFill": true,
-            "id": 2,
+            "id": 15,
             "members": [
-                { "name": "once", "type": "bool", "value": false },
-                { "name": "interact", "type": "bool", "value": false },
-                { "name": "prompt", "type": "string", "value": "" },
-                { "name": "dialogue", "type": "string", "value": "" },
-                { "name": "go", "type": "string", "value": "" },
-                { "name": "spawn", "type": "string", "value": "" },
-                { "name": "transition", "type": "string", "value": "" },
-                { "name": "sound", "type": "string", "value": "" },
-                { "name": "requires", "type": "string", "value": "" }
+                {
+                    "name": "dialogue",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "go",
+                    "propertyType": "Stage",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "spawn",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "transition",
+                    "propertyType": "Transition",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "interact",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "prompt",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "once",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "requires",
+                    "propertyType": "ItemId",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "sound",
+                    "propertyType": "Sound",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "finish",
+                    "type": "bool",
+                    "value": false
+                }
             ],
             "name": "Trigger",
             "type": "class",
@@ -52,11 +445,25 @@
         {
             "color": "#ffffd700",
             "drawFill": true,
-            "id": 3,
+            "id": 16,
             "members": [
-                { "name": "item", "type": "string", "value": "" },
-                { "name": "count", "type": "int", "value": 1 },
-                { "name": "ability", "type": "string", "value": "" }
+                {
+                    "name": "item",
+                    "propertyType": "ItemId",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "count",
+                    "type": "int",
+                    "value": 1
+                },
+                {
+                    "name": "pickup",
+                    "propertyType": "Pickup",
+                    "type": "string",
+                    "value": ""
+                }
             ],
             "name": "Item",
             "type": "class",
@@ -67,9 +474,24 @@
         {
             "color": "#ffff00ff",
             "drawFill": true,
-            "id": 4,
+            "id": 17,
             "members": [
-                { "name": "mob", "type": "string", "value": "" }
+                {
+                    "name": "mob",
+                    "propertyType": "MobKind",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "group",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "boss",
+                    "type": "bool",
+                    "value": false
+                }
             ],
             "name": "Mob",
             "type": "class",
@@ -78,13 +500,44 @@
             ]
         },
         {
-            "color": "#ff55ff55",
+            "color": "#ff00e5ff",
             "drawFill": true,
-            "id": 5,
+            "id": 18,
             "members": [
-                { "name": "angle", "type": "float", "value": 0 }
+                {
+                    "name": "sprite",
+                    "propertyType": "SpriteName",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "facing",
+                    "propertyType": "Facing",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "flip",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "dialogue",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "prompt",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "once",
+                    "type": "bool",
+                    "value": false
+                }
             ],
-            "name": "Spawn",
+            "name": "NPC",
             "type": "class",
             "useAs": [
                 "object"
@@ -93,11 +546,25 @@
         {
             "color": "#ff00aaff",
             "drawFill": true,
-            "id": 6,
+            "id": 19,
             "members": [
-                { "name": "ability", "type": "string", "value": "" },
-                { "name": "item", "type": "string", "value": "" },
-                { "name": "consume", "type": "bool", "value": false }
+                {
+                    "name": "ability",
+                    "propertyType": "Ability",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "item",
+                    "propertyType": "ItemId",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "consume",
+                    "type": "bool",
+                    "value": true
+                }
             ],
             "name": "Gate",
             "type": "class",
@@ -108,17 +575,240 @@
         {
             "color": "#ffa0a0a4",
             "drawFill": true,
-            "id": 7,
+            "id": 20,
             "members": [
-                { "name": "solid", "type": "bool", "value": false },
-                { "name": "surface", "propertyType": "Surface", "type": "string", "value": "grass" },
-                { "name": "oneway", "type": "bool", "value": false },
-                { "name": "door", "type": "bool", "value": false }
+                {
+                    "name": "solid",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "surface",
+                    "propertyType": "Surface",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "oneway",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "hazard",
+                    "type": "int",
+                    "value": 0
+                }
             ],
             "name": "Tile",
             "type": "class",
             "useAs": [
                 "tile"
+            ]
+        },
+        {
+            "color": "#ff8a8a8a",
+            "drawFill": true,
+            "id": 21,
+            "members": [
+                {
+                    "name": "name",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "door",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "locked",
+                    "type": "bool",
+                    "value": false
+                }
+            ],
+            "name": "Wall",
+            "type": "class",
+            "useAs": [
+                "tile"
+            ]
+        },
+        {
+            "color": "#ff7fbf60",
+            "drawFill": true,
+            "id": 22,
+            "members": [
+                {
+                    "name": "height",
+                    "type": "float",
+                    "value": 1
+                },
+                {
+                    "name": "ramp",
+                    "propertyType": "Ramp",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "low",
+                    "type": "float",
+                    "value": 0
+                },
+                {
+                    "name": "solid",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "water",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "surface",
+                    "propertyType": "Surface",
+                    "type": "string",
+                    "value": ""
+                }
+            ],
+            "name": "IsoTile",
+            "type": "class",
+            "useAs": [
+                "tile"
+            ]
+        },
+        {
+            "color": "#ff9090ff",
+            "drawFill": true,
+            "id": 23,
+            "members": [
+                {
+                    "name": "above",
+                    "type": "bool",
+                    "value": false
+                },
+                {
+                    "name": "shader",
+                    "type": "string",
+                    "value": ""
+                }
+            ],
+            "name": "Layer",
+            "type": "class",
+            "useAs": [
+                "layer"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 24,
+            "members": [
+                {
+                    "name": "music",
+                    "propertyType": "Music",
+                    "type": "string",
+                    "value": ""
+                }
+            ],
+            "name": "topdown",
+            "type": "class",
+            "useAs": [
+                "map"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 25,
+            "members": [
+                {
+                    "name": "music",
+                    "propertyType": "Music",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "background",
+                    "propertyType": "Background",
+                    "type": "string",
+                    "value": "hills"
+                }
+            ],
+            "name": "platformer",
+            "type": "class",
+            "useAs": [
+                "map"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 26,
+            "members": [
+                {
+                    "name": "music",
+                    "propertyType": "Music",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "floor",
+                    "type": "int",
+                    "value": 13
+                },
+                {
+                    "name": "ceiling",
+                    "type": "int",
+                    "value": 4
+                },
+                {
+                    "name": "doorTexture",
+                    "type": "int",
+                    "value": 6
+                },
+                {
+                    "name": "lockedTexture",
+                    "type": "int",
+                    "value": 12
+                },
+                {
+                    "name": "fog",
+                    "type": "color",
+                    "value": "#ff0f0f17"
+                },
+                {
+                    "name": "fogDistance",
+                    "type": "float",
+                    "value": 7
+                }
+            ],
+            "name": "raycaster",
+            "type": "class",
+            "useAs": [
+                "map"
+            ]
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 27,
+            "members": [
+                {
+                    "name": "music",
+                    "propertyType": "Music",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "levelHeight",
+                    "type": "int",
+                    "value": 16
+                }
+            ],
+            "name": "iso",
+            "type": "class",
+            "useAs": [
+                "map"
             ]
         }
     ]

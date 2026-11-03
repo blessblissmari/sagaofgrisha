@@ -1,221 +1,221 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <tileset version="1.10" tiledversion="1.11.0" name="platformer" tilewidth="16" tileheight="16" tilecount="440" columns="22">
  <image source="../sprites/platformer/arcade_platformer.png" width="352" height="320"/>
- <tile id="79">
+ <tile id="79" type="Tile">
   <properties>
    <property name="oneway" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="80">
+ <tile id="80" type="Tile">
   <properties>
    <property name="oneway" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="81">
+ <tile id="81" type="Tile">
   <properties>
    <property name="oneway" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="82">
+ <tile id="82" type="Tile">
   <properties>
    <property name="oneway" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="metal"/>
   </properties>
  </tile>
- <tile id="83">
+ <tile id="83" type="Tile">
   <properties>
    <property name="oneway" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="84">
+ <tile id="84" type="Tile">
   <properties>
    <property name="oneway" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="85">
+ <tile id="85" type="Tile">
   <properties>
    <property name="oneway" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="86">
+ <tile id="86" type="Tile">
   <properties>
    <property name="oneway" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="wood"/>
   </properties>
  </tile>
- <tile id="101">
+ <tile id="101" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="102">
+ <tile id="102" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="103">
+ <tile id="103" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="104">
+ <tile id="104" type="Tile">
  </tile>
- <tile id="105">
+ <tile id="105" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="106">
+ <tile id="106" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="107">
+ <tile id="107" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="108">
+ <tile id="108" type="Tile">
  </tile>
- <tile id="123">
+ <tile id="123" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="124">
+ <tile id="124" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="125">
+ <tile id="125" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="126">
+ <tile id="126" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="127">
+ <tile id="127" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="128">
+ <tile id="128" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="129">
+ <tile id="129" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="130">
+ <tile id="130" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="132">
+ <tile id="132" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="134">
+ <tile id="134" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="136">
+ <tile id="136" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="145">
+ <tile id="145" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="146">
+ <tile id="146" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="147">
+ <tile id="147" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="148">
+ <tile id="148" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="149">
+ <tile id="149" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="150">
+ <tile id="150" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="151">
+ <tile id="151" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="152">
+ <tile id="152" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="154">
+ <tile id="154" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="156">
+ <tile id="156" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="158">
+ <tile id="158" type="Tile">
   <animation>
    <frame tileid="158" duration="120"/>
    <frame tileid="159" duration="120"/>
@@ -223,151 +223,151 @@
    <frame tileid="161" duration="120"/>
   </animation>
  </tile>
- <tile id="167">
+ <tile id="167" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="168">
+ <tile id="168" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="169">
+ <tile id="169" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="170">
+ <tile id="170" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="171">
+ <tile id="171" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="172">
+ <tile id="172" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="173">
+ <tile id="173" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="174">
+ <tile id="174" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="185">
+ <tile id="185" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="187">
+ <tile id="187" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="189">
+ <tile id="189" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="190">
+ <tile id="190" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="191">
+ <tile id="191" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="192">
+ <tile id="192" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="193">
+ <tile id="193" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="194">
+ <tile id="194" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="195">
+ <tile id="195" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="196">
+ <tile id="196" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="207">
+ <tile id="207" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="209">
+ <tile id="209" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="214">
+ <tile id="214" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="grass"/>
   </properties>
  </tile>
- <tile id="215">
+ <tile id="215" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="216">
+ <tile id="216" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="217">
+ <tile id="217" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>
   </properties>
  </tile>
- <tile id="218">
+ <tile id="218" type="Tile">
   <properties>
    <property name="solid" type="bool" value="true"/>
    <property name="surface" propertytype="Surface" value="stone"/>

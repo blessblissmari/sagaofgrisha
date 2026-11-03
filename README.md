@@ -30,6 +30,33 @@
 - `engine/` — движок: сцены и переходы, UI в стиле Final Fantasy, ввод, звук, сохранения, небесная сфера.
 - `assets/` — графика, звук, шрифты и шейдеры (`shaders/transitions/` — переходы между сценами).
 
+## Карты в Tiled
+
+Карты — обычные файлы [Tiled](https://www.mapeditor.org) (1.10 и новее), игра читает `.tmx` напрямую.
+
+1. Откройте проект `assets/maps/SagaOfGrisha.tiled-project` (File → Open File or Project).
+2. Возьмите заготовку из `assets/maps/templates/` и сохраните её под новым именем (File → Save As):
+
+   | Заготовка | Режим (`kind`) | Тайлы | Слои |
+   | --- | --- | --- | --- |
+   | `topdown.tmx` | `topdown` — вид сверху, как остров | 32×32 | Ground, Buildings, Above (поверх героя) + Triggers, Spawns, Items, Mobs, NPCs |
+   | `platformer.tmx` | `platformer` — как пещера | 16×16 | Back, Ground + Triggers, Spawns, Items, Mobs, Gates |
+   | `dungeon.tmx` | `raycaster` — подземелье от первого лица | 64×64 | Walls (тайл = текстура стены, пусто = пол) + Spawns, Items, Mobs, Triggers |
+   | `iso.tmx` | `iso` — изометрия с высотами, как луг | 32×16 | floor, level1, level2… (Vertical offset = −16 × уровень) + Spawns, Mobs, Items, NPC, Triggers |
+
+3. Объекты ставьте **шаблонами** (панель Project → `templates/`, перетащить на карту):
+   `items/` — предметы, `mobs/` — монстры, `npcs/` — персонажи (в Tiled видна их картинка),
+   `objects/` — появление героя (`spawn_player`), выход (`exit`), зоны с текстом (`look`, `dialogue_once`), ворота (`gate`).
+4. У объектов, тайлов и карт есть классы со свойствами и выпадающими списками:
+   `Trigger` (dialogue, go, spawn, transition, interact, prompt, once, requires, sound, finish), `Item`, `Mob`
+   (group — монстры одной группы дерутся вместе), `NPC`, `Spawn`, `Gate`; тайлы — `Tile`, `Wall`, `IsoTile`;
+   класс карты (Map → Map Properties → Class) — это режим игры.
+   Текст диалога пишется прямо в свойстве: `Гриша: Привет! | Кашка: Мяу` (реплики через `|`).
+5. **F5** в Tiled (команда «Играть карту (LÖVE)», нужен `love` в PATH; путь меняется в File → Commands)
+   или `love . --map=assets/maps/templates/topdown.tmx` — сразу сыграть карту.
+6. Подключите карту к сюжету в `story.lua`: `game.stage "my_level" { kind = "topdown", map = "assets/maps/my_level.tmx" }`.
+7. Добавили предметы, монстров, спрайты или этапы — обновите списки и шаблоны: `love . --tiled`.
+
 ## Веб-версия
 
 После каждого пуша в `main` GitHub Actions (`.github/workflows/pages.yml`) собирает игру через

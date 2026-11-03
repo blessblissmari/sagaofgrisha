@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <tileset firstgid="1" source="../previews.tsx"/>
+ <object name="knight_sword" type="Item" gid="16" width="32" height="32">
+  <properties>
+   <property name="item" propertytype="ItemId" value="knight_sword"/>
+  </properties>
+ </object>
+</template>

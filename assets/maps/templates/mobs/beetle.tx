@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <tileset firstgid="1" source="../previews.tsx"/>
+ <object name="beetle" type="Mob" gid="31" width="32" height="32">
+  <properties>
+   <property name="mob" propertytype="MobKind" value="beetle"/>
+  </properties>
+ </object>
+</template>

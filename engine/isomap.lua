@@ -125,6 +125,10 @@ end
 
 -- layers -----------------------------------------------------------------------------
 
+-- object Class -> the list it goes to (objectsOf("Mobs") also gets Mob objects of any layer)
+local CLASS_LAYERS = { Spawn = "Spawns", Item = "Items", Mob = "Mobs", NPC = "NPC", Trigger = "Triggers" }
+local LAYER_ALIASES = { NPCs = "NPC" }
+
 function IsoMap:loadLayers(list, ox, oy, visible)
     for _, layer in ipairs(list) do
         local lx, ly = ox + (layer.offsetx or 0), oy + (layer.offsety or 0)
@@ -139,16 +143,20 @@ function IsoMap:loadLayers(list, ox, oy, visible)
                 visible = shown, opacity = layer.opacity or 1, properties = p,
             })
         elseif layer.type == "objectgroup" then
-            self.objectLayers[layer.name] = layer.objects
             for _, o in ipairs(layer.objects) do
                 o.layer = layer.name
                 o.properties = o.properties or {}
+                -- the object's Class (from a template) wins over the name of its layer
+                local c = (o.type and o.type ~= "") and o.type or o.class
+                local bucket = CLASS_LAYERS[c or ""] or LAYER_ALIASES[layer.name] or layer.name
+                self.objectLayers[bucket] = self.objectLayers[bucket] or {}
+                table.insert(self.objectLayers[bucket], o)
             end
         end
     end
 end
 
--- objects of a layer ("Mobs", "Items", "Triggers"...)
+-- objects of a layer ("Mobs", "Items", "Triggers"...) or of that Class in any layer
 function IsoMap:objectsOf(name)
     return self.objectLayers[name] or {}
 end
@@ -171,7 +179,8 @@ function IsoMap:spawn(name)
 end
 
 function IsoMap:objectPoint(o)
-    if o.shape == "point" or (o.width or 0) == 0 then
+    -- points; tile objects (a template with a picture) stand on their bottom-center
+    if o.shape == "point" or (o.width or 0) == 0 or o.gid then
         return o.x, o.y
     end
     return o.x + o.width / 2, o.y + o.height / 2

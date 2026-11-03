@@ -10,6 +10,8 @@
 -- image layers, group layers, typed custom properties (string, int, float,
 -- bool, color, file, object, class).
 -- Not supported: infinite maps and zstd compression (switch them off in Tiled).
+-- Tile objects made from a template (.tx with a tile) get the gid of that tile in
+-- this map. Color properties become "#rrggbb" ("#rrggbbaa" when not opaque).
 
 local utf8 = require("utf8")
 
@@ -145,6 +147,19 @@ function tiled.color(hex)
     return { tonumber(hex:sub(1, 2), 16), tonumber(hex:sub(3, 4), 16), tonumber(hex:sub(5, 6), 16), a }
 end
 
+-- Tiled "#aarrggbb" -> "#rrggbb" / "#rrggbbaa" (the order of util.hexColor)
+function tiled.cssColor(hex)
+    if type(hex) ~= "string" or hex == "" then
+        return hex
+    end
+    hex = hex:gsub("#", "")
+    if #hex == 8 then
+        local a = hex:sub(1, 2):lower()
+        return "#" .. hex:sub(3) .. (a == "ff" and "" or a)
+    end
+    return "#" .. hex
+end
+
 local function parseProperties(node, dir)
     local result = {}
     local props = node and child(node, "properties")
@@ -162,6 +177,8 @@ local function parseProperties(node, dir)
             value = tonumber(value) or 0
         elseif t == "bool" then
             value = value == "true"
+        elseif t == "color" then
+            value = tiled.cssColor(value)
         elseif t == "file" then
             value = resolve(dir, value)
         elseif t == "class" then
@@ -264,6 +281,41 @@ end
 
 -- objects -------------------------------------------------------------------------
 
+-- the map being loaded: its tilesets, so tiles of templates get the map's gids
+local loading = nil
+
+local FLIPS = { 2 ^ 31, 2 ^ 30, 2 ^ 29, 2 ^ 28 }
+
+-- gid of a template's tile -> gid of the same tile in the map being loaded
+local function templateGid(gid, template, path)
+    local raw, flags = tonumber(gid) or 0, 0
+    for _, f in ipairs(FLIPS) do
+        if raw >= f then
+            raw, flags = raw - f, flags + f
+        end
+    end
+    local source, first = nil, 1
+    for _, t in ipairs(children(template, "tileset")) do
+        local f = num(t.attrs.firstgid, 1)
+        if raw >= f and f >= first and t.attrs.source then
+            source, first = resolve(directory(path), t.attrs.source), f
+        end
+    end
+    if not source or not loading then
+        return nil
+    end
+    local last = nil
+    for _, ts in ipairs(loading.tilesets) do
+        if ts.source == source then
+            return ts.firstgid + raw - first + flags
+        end
+        last = ts
+    end
+    -- the map doesn't use that tileset yet: add it at the end (as Tiled does)
+    local ts = loading.addTileset(source, last and (last.firstgid + math.max(last.tilecount, 1)) or 1)
+    return ts.firstgid + raw - first + flags
+end
+
 local function mergeTemplate(attrs, node, dir)
     if not attrs.template then
         return attrs, node
@@ -278,6 +330,9 @@ local function mergeTemplate(attrs, node, dir)
     local merged = {}
     for k, v in pairs(object.attrs) do
         merged[k] = v
+    end
+    if merged.gid then
+        merged.gid = templateGid(merged.gid, template, path)
     end
     for k, v in pairs(attrs) do
         merged[k] = v
@@ -459,17 +514,29 @@ function tiled.load(path)
         tilesets = {},
         path = path,
     }
+    local function addTileset(source, firstgid)
+        local ts = copyTileset(loadTileset(source), firstgid)
+        ts.source = source
+        table.insert(map.tilesets, ts)
+        return ts
+    end
     for _, t in ipairs(children(node, "tileset")) do
         local firstgid = num(t.attrs.firstgid, 1)
         if t.attrs.source then
-            table.insert(map.tilesets, copyTileset(loadTileset(resolve(dir, t.attrs.source)), firstgid))
+            addTileset(resolve(dir, t.attrs.source), firstgid)
         else
             local ts = parseTileset(t, dir)
             ts.firstgid = firstgid
             table.insert(map.tilesets, ts)
         end
     end
-    map.layers = parseLayers(node, dir, path)
+    loading = { tilesets = map.tilesets, addTileset = addTileset }
+    local ok, layers = pcall(parseLayers, node, dir, path)
+    loading = nil
+    if not ok then
+        error(layers, 0)
+    end
+    map.layers = layers
     return map
 end
 

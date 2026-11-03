@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <tileset firstgid="1" source="../previews.tsx"/>
+ <object name="iso_gunner" type="NPC" gid="63" width="32" height="32">
+  <properties>
+   <property name="sprite" propertytype="SpriteName" value="iso_gunner"/>
+  </properties>
+ </object>
+</template>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <tileset firstgid="1" source="../previews.tsx"/>
+ <object name="robot" type="NPC" gid="80" width="32" height="32">
+  <properties>
+   <property name="sprite" propertytype="SpriteName" value="robot"/>
+  </properties>
+ </object>
+</template>

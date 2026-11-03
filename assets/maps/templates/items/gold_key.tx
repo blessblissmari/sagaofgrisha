@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <tileset firstgid="1" source="../previews.tsx"/>
+ <object name="gold_key" type="Item" gid="12" width="32" height="32">
+  <properties>
+   <property name="item" propertytype="ItemId" value="gold_key"/>
+  </properties>
+ </object>
+</template>

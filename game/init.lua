@@ -634,12 +634,18 @@ function game.boot(config)
     love.window.setTitle(game.title)
     game.newGame()
     local start = game.start
+    -- love . --tiled (rewrite the Tiled project and templates), love . --map=file.tmx
+    local fromTiled = require("game.tiled").command(arg)
+    if fromTiled == false then
+        return
+    end
     for _, a in ipairs(arg or {}) do
         local s = a:match("^%-%-stage=(.+)$")
         if s then
             start = s
         end
     end
+    start = fromTiled or start
     assert(start and game.stages[start] or game.modes[start], "story.lua: set game.start to the first stage")
     local def = game.resolve(start)
     scene.clear(game.create(def))
