@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Сага о Грише — тестовая сборка</title>
+  <style>
+    html, body { margin: 0; background: #0b0e24; color: #e8ecff; font-family: "Trebuchet MS", Verdana, sans-serif; }
+    main { display: flex; flex-direction: column; align-items: center; padding: 18px 10px 30px; }
+    h1 { margin: 4px 0 2px; font-size: 26px; letter-spacing: 1px; color: #ffd34a; text-shadow: 2px 2px 0 #000; }
+    .sub { margin: 0 0 14px; color: #9aa4d8; font-size: 14px; }
+    .frame { position: relative; width: 960px; height: 540px; border: 3px solid #e8ecff; border-radius: 8px;
+             box-shadow: 0 0 0 3px #1a2266, 0 10px 40px rgba(0,0,0,.6); background: linear-gradient(#2a3aa8, #0e1450); overflow: hidden; }
+    canvas { display: block; }
+    #canvas { visibility: hidden; }
+    #overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+               background: linear-gradient(#2a3aa8, #0e1450); cursor: pointer; }
+    #overlay b { font-size: 30px; color: #fff; text-shadow: 3px 3px 0 #000; }
+    #overlay span { margin-top: 10px; color: #c8d0ff; }
+    #status { margin-top: 16px; color: #ffd34a; min-height: 1.2em; }
+    .bar { margin-top: 12px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    button, a.btn { background: linear-gradient(#3348c4, #16206e); color: #fff; border: 2px solid #e8ecff; border-radius: 6px;
+             padding: 6px 14px; font-size: 14px; cursor: pointer; text-decoration: none; }
+    button:hover, a.btn:hover { border-color: #ffd34a; color: #ffd34a; }
+    .help { margin-top: 18px; max-width: 960px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
+    .help div { background: rgba(40, 56, 170, .35); border: 2px solid #38448a; border-radius: 6px; padding: 8px 12px; font-size: 13.5px; line-height: 1.5; }
+    .help h3 { margin: 0 0 4px; font-size: 15px; color: #ffd34a; }
+    kbd { background: #1a2266; border: 1px solid #8a94d8; border-radius: 3px; padding: 0 4px; font-family: inherit; }
+    @media (max-width: 1000px) { .frame { transform: scale(calc(100vw / 1000px)); transform-origin: top center; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Сага о Грише</h1>
+  <p class="sub">тестовая сборка движка · LÖVE 11.4 в браузере (love.js)</p>
+  <div class="frame">
+    <canvas id="loadingCanvas" width="960" height="540" oncontextmenu="event.preventDefault()"></canvas>
+    <canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    <div id="overlay"><b>▶ Нажмите, чтобы начать</b><span id="status">Загрузка…</span></div>
+  </div>
+  <div class="bar">
+    <button onclick="goFullScreen()">Во весь экран</button>
+    <a class="btn" href="game.love" download>Скачать game.love</a>
+    <a class="btn" href="https://github.com/blessblissmari/sagaofgrisha">Исходники на GitHub</a>
+  </div>
+  <div class="help">
+    <div><h3>Везде</h3><kbd>Enter</kbd>/<kbd>F</kbd> — выбрать, действие · <kbd>Esc</kbd> — пауза/назад · <kbd>I</kbd> — сумка
+      (вкладки <kbd>Q</kbd>/<kbd>E</kbd>) · <kbd>Ctrl</kbd> — промотать диалог · мышь тоже работает</div>
+    <div><h3>Остров (вид сверху)</h3><kbd>WASD</kbd>/стрелки — ходьба · <kbd>Пробел</kbd> — удар оружием · <kbd>K</kbd> — бросить камень ·
+      «!» над героем — тут можно что-то сделать</div>
+    <div><h3>Подземелье (псевдо-3D)</h3><kbd>W</kbd>/<kbd>S</kbd> — шаг · <kbd>A</kbd>/<kbd>D</kbd> — вбок · <kbd>Q</kbd>/<kbd>E</kbd> — поворот ·
+      <kbd>Пробел</kbd> или потянуть мышью — удар (влево-вправо, сверху, вперёд) · <kbd>Shift</kbd>/ПКМ — блок · <kbd>M</kbd> — карта</div>
+    <div><h3>Бой</h3>стрелки + <kbd>Enter</kbd> — команды · <kbd>V</kbd> — вид камеры · <kbd>Q</kbd>/<kbd>E</kbd> — поворот (небо-сфера
+      крутится вместе с камерой) · вовремя нажатый <kbd>Enter</kbd> при ударе — крит</div>
+  </div>
+</main>
+<script>
+  function goFullScreen() {
+    var c = document.getElementById("canvas");
+    (c.requestFullscreen || c.webkitRequestFullScreen || c.mozRequestFullScreen || function(){}).call(c);
+  }
+  var loadingContext = document.getElementById('loadingCanvas').getContext('2d');
+  function drawLoadingText(text) {
+    var c = loadingContext.canvas;
+    var g = loadingContext.createLinearGradient(0, 0, 0, c.height);
+    g.addColorStop(0, "#2a3aa8"); g.addColorStop(1, "#0e1450");
+    loadingContext.fillStyle = g; loadingContext.fillRect(0, 0, c.width, c.height);
+    loadingContext.font = '24px "Trebuchet MS", sans-serif'; loadingContext.textAlign = 'center';
+    loadingContext.fillStyle = "#ffffff"; loadingContext.fillText(text, c.width / 2, c.height / 2);
+    document.getElementById('status').textContent = text;
+  }
+  window.onload = function () { window.focus(); };
+  window.onclick = function () { window.focus(); };
+  window.addEventListener("keydown", function (e) {
+    if ([32, 37, 38, 39, 40, 9].indexOf(e.keyCode) > -1) e.preventDefault();
+  }, false);
+  var Module = {
+    arguments: ["./game.love"],
+    INITIAL_MEMORY: 268435456,
+    printErr: console.error.bind(console),
+    canvas: (function () {
+      var canvas = document.getElementById('canvas');
+      canvas.addEventListener("webglcontextlost", function (e) { alert('WebGL перезапустился, обновите страницу.'); e.preventDefault(); }, false);
+      return canvas;
+    })(),
+    setStatus: function (text) {
+      if (text) {
+        drawLoadingText(text);
+      } else if (Module.remainingDependencies === 0) {
+        document.getElementById('loadingCanvas').style.display = 'none';
+        document.getElementById('canvas').style.visibility = 'visible';
+      }
+    },
+    totalDependencies: 0,
+    remainingDependencies: 0,
+    monitorRunDependencies: function (left) {
+      this.remainingDependencies = left;
+      this.totalDependencies = Math.max(this.totalDependencies, left);
+      Module.setStatus(left ? 'Подготовка… (' + (this.totalDependencies - left) + '/' + this.totalDependencies + ')' : 'Готово!');
+    }
+  };
+  window.onerror = function () {
+    Module.setStatus('Ошибка — подробности в консоли браузера (F12)');
+    Module.setStatus = function (text) { if (text) Module.printErr('[post-exception status] ' + text); };
+  };
+  // the game starts after a click: browsers only allow sound after the player touched the page
+  var engineLoaded = false, clicked = false, started = false;
+  function tryStart() {
+    if (started || !engineLoaded || !clicked) return;
+    started = true;
+    document.getElementById('overlay').style.display = 'none';
+    drawLoadingText('Загрузка игры…');
+    Love(Module);
+    document.getElementById('canvas').focus();
+  }
+  document.getElementById('overlay').addEventListener('click', function () { clicked = true; tryStart(); });
+  window.addEventListener('keydown', function (e) { if (!started && (e.key === 'Enter' || e.key === ' ')) { clicked = true; tryStart(); } });
+  var applicationLoad = function () {
+    engineLoaded = true;
+    document.getElementById('status').textContent = 'Готово к запуску';
+    tryStart();
+  };
+  drawLoadingText('Загрузка…');
+</script>
+<script src="game.js"></script>
+<script async src="love.js" onload="applicationLoad(this)"></script>
+</body>
+</html>

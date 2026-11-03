@@ -28,6 +28,7 @@ local scene = { stack = {} }
 local stack = scene.stack
 local loaded = setmetatable({}, { __mode = "k" })
 local transition = nil
+local snapshot = nil -- the old screen of a reveal transition
 
 local function call(s, name, ...)
     if s and s[name] then
@@ -87,13 +88,19 @@ end
 --   scene.transition(fn, "swirl")         cover the screen, call fn, uncover
 --   scene.transition(fn, "circle", { duration = 1, center = { x, y }, color = { 1, 1, 1 } })
 --
--- Kinds: fade (default), pixel, swirl, wipe, circle, dissolve, blinds, wave,
--- diamond, battle, flash. Each kind except "fade" is a shader in
--- assets/shaders/transitions/<kind>.glsl that gets
---   progress  0 (scene visible) .. 1 (screen covered)
---   phase     0 while covering, 1 while uncovering
---   color, center (0..1), screenSize, time
--- so a new transition is just a new .glsl file (see README).
+-- Cover kinds (the screen is covered, the scene changes, the screen opens):
+--   fade (default), pixel, swirl, wipe, circle, dissolve, blinds, wave, diamond,
+--   battle, flash. Each kind except "fade" is a shader in
+--   assets/shaders/transitions/<kind>.glsl that gets
+--     progress  0 (scene visible) .. 1 (screen covered)
+--     phase     0 while covering, 1 while uncovering
+--     color, center (0..1), screenSize, time
+-- Reveal kinds (the old picture is kept and the new scene appears through it):
+--   page (book page turn), starwars (soft line wipe), clock, iris, crossfade, slide.
+--   Their shaders get progress 0 (old) .. 1 (new), `previous` (the old screen),
+--   direction, center, softness:
+--   scene.transition(fn, "starwars", { direction = { 0, 1 }, softness = 0.2 })
+-- A new transition is just a new .glsl file plus a line in scene.transitions.
 
 scene.transitions = {
     fade = { duration = 0.6 },
@@ -107,6 +114,13 @@ scene.transitions = {
     diamond = { duration = 1.0 },
     battle = { duration = 1.4 },
     flash = { duration = 0.6, color = { 1, 1, 1 } },
+    -- reveal transitions
+    page = { duration = 1.4, reveal = true },
+    starwars = { duration = 1.0, reveal = true },
+    clock = { duration = 1.1, reveal = true },
+    iris = { duration = 1.0, reveal = true },
+    crossfade = { duration = 0.9, reveal = true },
+    slide = { duration = 0.8, reveal = true },
 }
 scene.defaultTransition = "fade"
 
@@ -130,6 +144,20 @@ function scene.transition(fn, kind, opts)
         return
     end
     local info = scene.transitions[kind] or {}
+    if info.reveal then
+        local shader = transitionShader(kind)
+        if shader then
+            transition = {
+                fn = fn, time = 0, kind = kind, shader = shader, reveal = true, done = false,
+                duration = opts.duration or info.duration or 1,
+                direction = opts.direction or info.direction, center = opts.center,
+                softness = opts.softness or info.softness,
+            }
+            input.lock(true)
+            return
+        end
+        kind, info = "fade", scene.transitions.fade -- no shaders on this GPU
+    end
     transition = {
         fn = fn,
         time = 0,
@@ -179,7 +207,7 @@ end
 
 -- 0 = fully visible, 1 = fully covered
 local function coverage()
-    if not transition then
+    if not transition or transition.reveal then
         return 0
     end
     local t = transition.time / transition.half
@@ -192,7 +220,19 @@ end
 -- callbacks -----------------------------------------------------------------
 
 function scene.update(dt)
-    if transition then
+    if transition and transition.reveal then
+        -- the old picture was saved by the last draw: change the scene now
+        if transition.snapshot and not transition.done then
+            transition.done = true
+            transition.fn()
+        elseif transition.done then
+            transition.time = transition.time + dt
+            if transition.time >= transition.duration then
+                transition = nil
+                input.lock(false)
+            end
+        end
+    elseif transition then
         transition.time = transition.time + dt
         if not transition.done and transition.time >= transition.half then
             transition.done = true
@@ -219,6 +259,24 @@ function scene.draw()
     end
     love.graphics.origin()
 
+    if transition and transition.reveal and not transition.snapshot then
+        -- keep the old picture for a reveal transition
+        local source = screen.getCanvas()
+        if source then
+            if not snapshot or snapshot:getWidth() ~= screen.width or snapshot:getHeight() ~= screen.height then
+                snapshot = love.graphics.newCanvas(screen.width, screen.height)
+            end
+            love.graphics.push("all")
+            love.graphics.setCanvas(snapshot)
+            love.graphics.clear(0, 0, 0, 1)
+            love.graphics.origin()
+            love.graphics.setShader()
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.draw(source, 0, 0)
+            love.graphics.pop()
+        end
+        transition.snapshot = true
+    end
     local c = coverage()
     if c > 0 and not transition.shader then
         -- plain fade (also the fallback when a shader could not be compiled)
@@ -240,6 +298,17 @@ function scene.effects()
             end
             break
         end
+    end
+    if transition and transition.reveal and transition.done then
+        local name = "transitions/" .. transition.kind
+        local center = transition.center or { screen.width / 2, screen.height / 2 }
+        shaders.send(name, "progress", math.min(1, transition.time / transition.duration))
+        shaders.send(name, "previous", snapshot)
+        shaders.send(name, "center", { center[1] / screen.width, center[2] / screen.height })
+        shaders.send(name, "direction", transition.direction or { 0, 0 })
+        shaders.send(name, "softness", transition.softness or 0)
+        table.insert(list, name)
+        return list
     end
     local c = coverage()
     if c > 0 and transition.shader then

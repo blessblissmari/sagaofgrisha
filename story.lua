@@ -1,17 +1,188 @@
+-- =====================================================================================
+--  Сага о Грише — тестовая сборка (витрина движка)
+--  Весь сюжет описывается здесь: этапы (stage), персонажи, сцены, фоны, небо, голоса.
+--  Подробности по каждому режиму — в комментариях в начале game/modes/<режим>.lua
+-- =====================================================================================
 local game = require("game")
+
 game.title = "Сага о Грише"
-game.start = "island"
+game.start = "menu"
+
+-- Оформление: "ff" (окна в стиле Final Fantasy, по умолчанию) или "parchment" (пергамент).
+-- Можно переопределить цвета: game.ui = { preset = "ff", colors = { accent = "#ffd34a" } }
+game.ui = "ff"
+
+-- Герой и стартовый инвентарь (оружие и броня надеваются в сумке [I])
 game.player.party = { "bunny" }
-game.player.items = { stone = 3 }
-game.stage "menu" { kind = "title", background = "mountains", music = "calm", subtitle = "тест", newGame = "island" }
-game.stage "island" { kind = "topdown", map = "assets/maps/island.tmx",
+game.player.items = { stone = 3, carrot = 2, potion = 2, sword = 1, axe = 1, spear = 1,
+    leather = 1, helmet = 1, letter = 1 }
+game.player.equipment = { weapon = "sword", body = "leather" }
+
+-- Голоса: у каждого персонажа свой синтезированный «голос» (male, female, kid, old,
+-- monster, alien, robot, ghost, animal, narrator, beep). Можно поменять прямо тут:
+--   game.characters.bunny.voice = { "kid", 520 }   -- тип и высота тона в Гц
+game.characters.bunny.voice = "animal"
+
+-- Тексты писем/записок (предмет letter открывается в сумке)
+game.notes.letter = "Гриша!\n\nЕсли читаешь это — значит, ты всё-таки открыл сумку. "
+    .. "Загляни в подземелье к северу от острова. Там темно, сыро и полно слизней.\n\n— Кашка"
+
+-- Свои фоны и небо можно описать тут же (как в game/data/backgrounds.lua и skies.lua):
+--   game.backgrounds.castle = { color = { 0.1, 0.1, 0.2 }, layers = { { image = "...", scale = 4 } } }
+--   game.skies.storm = { top = "#202838", horizon = "#606878", clouds = 0.9, band = "mountains" }
+
+-- =====================================================================================
+--  Главное меню
+-- =====================================================================================
+game.stage "menu" {
+    kind = "title", background = "mountains", music = "calm",
+    subtitle = "тестовая сборка",
+    newGame = "prologue", newGameTransition = "page",
+    menu = {
+        { "Демо-режимы", list = {
+            { "Визуальная новелла", go = "prologue" },
+            { "Переходы между сценами", go = "transitions" },
+            { "Остров (вид сверху)", go = "island" },
+            { "Подземелье (псевдо-3D)", go = "dungeon", transition = "iris" },
+            { "Пещера (платформер)", go = "cave" },
+            { "Бой: день", play = "fight_day" },
+            { "Бой: закат", play = "fight_sunset" },
+            { "Бой: ночь", play = "fight_night" },
+            { "Тетрис", play = "tetris" },
+        } },
+    },
+}
+
+-- =====================================================================================
+--  Пролог: визуальная новелла
+--  Эффекты в тексте: {wave}волна{/} {shake}дрожь{/} {rainbow}радуга{/} {accent}цвет{/}
+--  {#ff8080}любой цвет{/} {slow}медленно{/} {p} пауза, {@hop} — эмоция в момент буквы.
+-- =====================================================================================
+game.stage "prologue" {
+    kind = "novel", background = "forest", weather = "leaves", music = "calm",
+    script = function(s)
+        s:title("Глава 1", "Лес у моря")
+        s:show("grisha", { at = "left" })
+        s:show("bunny", { at = "right" })
+        s:say("grisha", "Привет, {accent}Кашка{/}! {wave}Смотри, какой лес!{/} Тут {shake}страшновато{/}...")
+        s:emotion("bunny", "joy")
+        s:say("bunny", "Ура!{@hop} Я так рада!{p} {rainbow}Пойдём искать морковку!{/}")
+        s:emotion("grisha", "anger")
+        s:say("grisha", "{@shake}Что?! Опять морковка?!")
+        s:emote("bunny", "sweat")
+        local a = s:ask("bunny", "Ну пожалуйста... Пойдём?", { "Да, пойдём", "Нет", "Может быть" })
+        if a == 1 then
+            s:closeup("bunny")
+            s:emotion("bunny", "love")
+            s:say("bunny", "Спасибо!{@hop} Ты лучший!")
+            s:closeup()
+        elseif a == 2 then
+            s:emotion("bunny", "sad")
+            s:say("bunny", "{slow}Ну и ладно...{/}")
+            s:emotion("grisha", "sweat")
+            s:say("grisha", "Ладно-ладно, пойдём!")
+        else
+            s:emotion("grisha", "think")
+            s:say("grisha", "Хм... {p=1}Ну, может быть.")
+        end
+        s:bg("cliffs", "starwars")
+        s:say(nil, "{slow}Тем временем у моря...{/}")
+        s:emotion("grisha", "surprise")
+        s:quake()
+        s:say("grisha", "{@shake}Земля трясётся!")
+        s:emotion("bunny", "fear")
+        s:say("bunny", "Бежим на остров!")
+        s:go("island", "page")
+    end,
+}
+
+-- =====================================================================================
+--  Витрина переходов: s:bg("фон", "переход")
+--  Закрывающие: fade, pixel, swirl, wipe, circle, dissolve, blinds, wave, diamond, battle
+--  Раскрывающие (старая картинка уходит, новая появляется): page, starwars, clock, iris,
+--  crossfade, slide. Опции: { direction = { 0, 1 }, softness = 0.2, duration = 2 }
+-- =====================================================================================
+game.stage "transitions" {
+    kind = "novel", background = "mountains", music = "calm",
+    script = function(s)
+        s:show("grisha", { at = "center" })
+        s:say("grisha", "Покажу переходы. {accent}Листаем страницу{/}...")
+        s:bg("forest", "page")
+        s:say("grisha", "А это — {accent}шторка из «Звёздных войн»{/}: мягкая невидимая полоса.")
+        s:bg("cliffs", "starwars")
+        s:say("grisha", "Та же шторка сверху вниз.")
+        s:bg("hills", "starwars", { direction = { 0, 1 }, softness = 0.25 })
+        s:say("grisha", "{accent}Часы{/} — тоже из «Звёздных войн».")
+        s:bg("snowy", "clock")
+        s:say("grisha", "{accent}Диафрагма{/}.")
+        s:bg("mountains", "iris")
+        s:say("grisha", "{accent}Сдвиг{/}.")
+        s:bg("forest", "slide")
+        s:say("grisha", "{accent}Наплыв{/}.")
+        s:bg("cliffs", "crossfade")
+        s:say("grisha", "И закрывающие: {accent}вихрь{/}...")
+        s:bg("hills", "swirl")
+        s:say("grisha", "...{accent}пиксели{/}...")
+        s:bg("snowy", "pixel")
+        s:say("grisha", "...и {accent}жалюзи{/}.")
+        s:bg("mountains", "blinds")
+        s:say("grisha", "Всё! Обратно в меню.")
+        s:go("menu", "page")
+    end,
+}
+
+-- =====================================================================================
+--  Остров: вид сверху. Зоны (Triggers) из Tiled -> что происходит.
+--  [F]/[Enter] — действие, [Пробел] — удар оружием, [I] — сумка, [Esc] — пауза.
+-- =====================================================================================
+game.stage "island" {
+    kind = "topdown", map = "assets/maps/island.tmx", music = "calm",
+    battle = "fight_day",
     triggers = {
-        test_trigger = function(s)
-            local a = s:ask("Вы согласны или нет?", { "Да", "Нет" })
-            s:say("grisha", a == 1 and "Да!" or "Нет!")
+        cave = { "cave" },
+        dungeon = { "dungeon", transition = "iris" },
+        sacks = function(s)
+            s:say("grisha", "Мешки с мукой. {p}И... {accent}морковка{/}!")
+            if s:once("sacks_carrot") then
+                s:give("carrot", 1)
+            end
         end,
-    } }
-game.stage "fight" { kind = "battle", enemies = { "blob_blue", "slime", "frog" }, next = "island" }
-game.stage "tetris_test" { kind = "tetris", goal = 3, next = "island" }
-game.stage "cave" { kind = "platformer", map = "assets/maps/cave.tmx",
-    triggers = { exit = { "island", spawn = "from_cave" } } }
+        test_trigger = function(s)
+            s:emote("grisha", "?")
+            local a = s:ask("Отдохнуть немного?", { "Да", "Нет" })
+            if a == 1 then
+                s:daytime("evening")
+                s:say("grisha", "Красивый закат...")
+            end
+        end,
+    },
+}
+
+-- Пещера: платформер
+game.stage "cave" {
+    kind = "platformer", map = "assets/maps/cave.tmx",
+    triggers = { exit = { "island", spawn = "from_cave" } },
+}
+
+-- =====================================================================================
+--  Подземелье: псевдо-3D (raycaster), бой от первого лица как в Daggerfall.
+--  [W/S] шаг, [A/D] вбок, [Q/E] поворот, [F] дверь/действие, [Пробел] или тянуть мышью — удар,
+--  [Shift]/правая кнопка — блок, [M] карта, [I] сумка (оружие из сумки видно в руке).
+-- =====================================================================================
+game.stage "dungeon" {
+    kind = "raycaster", map = "assets/maps/dungeon.tmx", music = "calm",
+    battle = "fight_dungeon",
+    triggers = { exit = { "island", spawn = "from_dungeon", transition = "iris" } },
+}
+
+-- =====================================================================================
+--  Пошаговые бои. sky = небо-сфера вокруг поля (day, meadow, sunset, night, forest,
+--  snow, dungeon или своя таблица). [V] вид, [Q/E] поворот камеры.
+-- =====================================================================================
+game.stage "fight_day" { kind = "battle", enemies = { "blob_blue", "slime", "frog" }, sky = "day" }
+game.stage "fight_sunset" { kind = "battle", enemies = { "slime", "frog" }, sky = "sunset" }
+game.stage "fight_night" { kind = "battle", enemies = { "blob_red", "blob_blue" }, sky = "night" }
+game.stage "fight_dungeon" { kind = "battle", enemies = { "blob_blue", "slime" }, sky = "dungeon" }
+
+-- Мини-игра
+game.stage "tetris" { kind = "tetris", goal = 3 }

@@ -7,7 +7,7 @@
 --
 -- The library of things (story.lua can add or change anything):
 --   game.sprites, game.characters, game.items, game.mobs, game.pets, game.skills,
---   game.units, game.jokers, game.backgrounds, game.sounds, game.surfaces, game.effects
+--   game.units, game.jokers, game.backgrounds, game.skies, game.sounds, game.surfaces, game.effects
 -- Runtime (used by the modes and the script commands):
 --   game.go(stage, opts), game.play(stage, opts, onDone), game.finish(mode, result),
 --   game.run(script, host, ...), game.state, game.newGame(), game.save(), game.load()
@@ -42,6 +42,7 @@ local game = {
     units = require("game.data.units"),
     jokers = require("game.data.jokers"),
     backgrounds = require("game.data.backgrounds"),
+    skies = require("game.data.skies"),
     sounds = require("game.data.sounds"),
     surfaces = require("game.data.surfaces"),
     effects = require("game.data.effects"),

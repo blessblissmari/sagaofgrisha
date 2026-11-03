@@ -46,6 +46,8 @@ function Menu:init(items, opts)
     self.spacing = opts.spacing or (self.style == "buttons" and math.max(54, self.font:getHeight() + 22)
         or math.floor(self.font:getHeight() * (theme.menuSpacing or 1.15)))
     self.width = opts.width
+    self.visible = opts.visible -- show at most this many rows and scroll (arrows show more)
+    self.first = 1
     self.color = opts.color or theme.colors.ink
     self.selectedColor = opts.selectedColor or theme.colors.accent
     self.disabledColor = opts.disabledColor or theme.colors.faded
@@ -115,7 +117,30 @@ function Menu:getWidth()
 end
 
 function Menu:getHeight()
-    return #self.items * self.spacing
+    return self:rows() * self.spacing
+end
+
+-- number of rows on the screen
+function Menu:rows()
+    if self.visible and #self.items > self.visible then
+        return self.visible
+    end
+    return #self.items
+end
+
+-- keep the selected row inside the scroll window
+function Menu:scrollToIndex()
+    local rows = self:rows()
+    if rows >= #self.items then
+        self.first = 1
+        return
+    end
+    if self.index < self.first then
+        self.first = self.index
+    elseif self.index > self.first + rows - 1 then
+        self.first = self.index - rows + 1
+    end
+    self.first = math.max(1, math.min(self.first, #self.items - rows + 1))
 end
 
 function Menu:choose()
@@ -146,6 +171,7 @@ function Menu:update(dt)
     elseif input.pressed("down", true) then
         self:move(1)
     end
+    self:scrollToIndex()
     local item = self.items[self.index]
     if item and item.change and isEnabled(item) then
         if input.pressed("left", true) then
@@ -190,6 +216,9 @@ function Menu:draw(x, y)
     local px = theme.pixelOf(font)
     local shadowColor = theme.colors.shadow
     self.rects = {}
+    self:scrollToIndex()
+    local rows = self:rows()
+    local first, last = self.first, self.first + rows - 1
     local function text(label, tx, ty, color)
         if self.shadow then
             lg.setColor(shadowColor)
@@ -198,11 +227,12 @@ function Menu:draw(x, y)
         lg.setColor(color)
         lg.print(label, tx, ty)
     end
-    for i, item in ipairs(self.items) do
+    for i = first, math.min(last, #self.items) do
+        local item = self.items[i]
         local label = labelOf(item)
         local selected = i == self.index and self.active
         local enabled = isEnabled(item)
-        local iy = y + (i - 1) * self.spacing
+        local iy = y + (i - first) * self.spacing
         local color = not enabled and self.disabledColor or (selected and self.selectedColor or self.color)
         if self.style == "buttons" then
             local image = theme.image(selected and "buttonActive" or "button")
@@ -233,6 +263,18 @@ function Menu:draw(x, y)
                 panel.cursor(tx - 6 + bob, iy + font:getHeight() / 2, theme.cursorScale)
             end
             self.rects[i] = { x - 30, iy - 4, width + 30, self.spacing }
+        end
+    end
+    -- arrows when there is more above / below
+    if rows < #self.items then
+        -- on the right edge, like the scroll marks in FF windows
+        local ax = x + width + 16
+        local wob = math.sin(self.time * 6) * 2
+        if first > 1 then
+            panel.arrow(ax, y + 8 - wob, "up", 14, theme.colors.accent)
+        end
+        if last < #self.items then
+            panel.arrow(ax, y + rows * self.spacing - 12 + wob, "down", 14, theme.colors.accent)
         end
     end
     lg.setColor(1, 1, 1, 1)

@@ -57,6 +57,27 @@ function Battle:init(def)
     local g = G()
     local st = g.state
     self.background = Background(g.backgrounds[def.background or "forest"] or g.backgrounds.black)
+    -- the sky sphere around the field (sky = false: the flat parallax background)
+    if def.sky ~= false then
+        local sky = def.sky
+        if sky == nil then
+            sky = (def.background and g.skies[def.background]) and def.background or "day"
+        end
+        if type(sky) == "string" then
+            sky = g.skies[sky] or g.skies.day
+        end
+        if type(sky) == "table" then
+            local copy = {}
+            for k, v in pairs(sky) do
+                copy[k] = v
+            end
+            -- a background named in the stage becomes the band around the horizon
+            if def.background and g.backgrounds[def.background] and def.sky == nil then
+                copy.band = def.background
+            end
+            self.sky = engine.Sky(copy, g.backgrounds)
+        end
+    end
     self.party, self.enemies, self.units = {}, {}, {}
     -- the hero and the pets
     local hero = st.hero
@@ -108,6 +129,12 @@ function Battle:init(def)
     -- camera: view 1 -> view 2 with blend 0..1
     self.view, self.fromView, self.blend = "iso", "iso", 1
     self.angle, self.targetAngle = 0, 0
+    -- FF-style opening: the camera swings around the field and settles
+    if def.intro ~= false then
+        self.fromView, self.blend = "behind", 0
+        self.angle = -1.3
+        self.introT = 0
+    end
     self.aim = nil
     self.log = nil
     self.messages = {}
@@ -171,6 +198,32 @@ function Battle:projectView(view, x, y, z)
         local horizon = 150
         return CX + lat * f / depth, horizon + (camH - z) * f / depth, f / depth * 0.85, -depth
     end
+end
+
+-- the sky sphere follows the camera: turning (yaw) and looking down (pitch)
+local SKY_FOV = 1.0
+local VIEW_PITCH = { iso = -0.27, top = -0.62, behind = -0.06 }
+
+function Battle:viewYaw(view)
+    if view == "behind" then
+        local _, _, fx, fy = self:behindCamera()
+        return math.atan2(fx, -fy) + self.angle
+    end
+    return self.angle
+end
+
+function Battle:skyYaw()
+    local a, b = self:viewYaw(self.view), self:viewYaw(self.fromView)
+    local t = util.clamp(self.blend, 0, 1)
+    -- the shortest way around
+    local d = (a - b + math.pi) % (2 * math.pi) - math.pi
+    return b + d * t * t * (3 - 2 * t)
+end
+
+function Battle:skyPitch()
+    local t = util.clamp(self.blend, 0, 1)
+    t = t * t * (3 - 2 * t)
+    return util.lerp(VIEW_PITCH[self.fromView] or -0.3, VIEW_PITCH[self.view] or -0.3, t)
 end
 
 function Battle:project(x, y, z)
@@ -339,8 +392,10 @@ end
 
 function Battle:moveTo(u, x, y, seconds)
     local dir = x < u.x and "left" or "right"
+    u.faceX, u.faceY = util.normalize(x - u.x, y - u.y)
     u.sprite:play("walk", dir)
     self:tween(seconds or 0.35, u, { x = x, y = y }, "quadOut")
+    u.faceX, u.faceY = nil, nil
     u.sprite:play("idle", u.side == "party" and "left" or "right")
 end
 
@@ -665,6 +720,7 @@ function Battle:ending()
         end
         self.log = #lines > 0 and ("Добыча: " .. table.concat(lines, ", ")) or "Враги повержены!"
         for _, u in ipairs(self:alive(self.party)) do
+            u.faceCamera = true -- a little victory dance towards the player
             u.sprite:play("walk", "down")
         end
         self:wait(2.6)
@@ -686,7 +742,17 @@ function Battle:update(dt)
     self.dt = dt
     self.clock = self.clock + dt
     self.background:update(dt)
-    if self.blend < 1 then
+    if self.introT then
+        -- the opening swing (1.6 s)
+        self.introT = self.introT + dt / 1.6
+        local k = math.min(1, self.introT)
+        local e = 1 - (1 - k) ^ 3
+        self.angle = util.lerp(-1.3, 0, e)
+        self.blend = e
+        if k >= 1 then
+            self.introT = nil
+        end
+    elseif self.blend < 1 then
         self.blend = math.min(1, self.blend + dt / 0.6)
     end
     -- camera controls (not while aiming)
@@ -756,6 +822,36 @@ function Battle:drawField()
     lg.setColor(1, 1, 1, 1)
 end
 
+-- Sprites with directions (left/right/up/down) look where the unit faces as seen
+-- from the current camera: turning the camera turns them too, so the pets never
+-- stare at the player.
+function Battle:faceCamera(u, sprite)
+    if u.faceCamera or not sprite.name then
+        return
+    end
+    local base = sprite.name:match("^(.-)%.%a+$")
+    if not base then
+        return
+    end
+    local fx, fy = u.faceX or (u.side == "party" and -1 or 1), u.faceY or 0
+    local ax, ay = self:project(u.x, u.y, 0)
+    local bx, by = self:project(u.x + fx * 20, u.y + fy * 20, 0)
+    local dx, dy = bx - ax, by - ay
+    local d
+    if math.abs(dx) > math.abs(dy) * 1.1 then
+        d = dx < 0 and "left" or "right"
+    else
+        d = dy < 0 and "up" or "down"
+    end
+    if sprite.name ~= base .. "." .. d and sprite:has(base, d) then
+        local pos = sprite.current and sprite.current.position or 1
+        sprite:play(base, d)
+        if sprite.current and sprite.current.frames[pos] then
+            sprite.current:gotoFrame(pos)
+        end
+    end
+end
+
 function Battle:drawUnit(u)
     local lg = love.graphics
     local sx, sy, s = self:project(u.x, u.y, u.z)
@@ -767,6 +863,8 @@ function Battle:drawUnit(u)
     if behind and u == self.aimer and u.back then
         sprite = u.back
         sprite:play("idle", "up")
+    else
+        self:faceCamera(u, sprite)
     end
     local scale = (sprite.scale or 1) * u.scale * s
     local flip = false
@@ -808,7 +906,11 @@ function Battle:draw()
     local ox, oy = self:shakeOffset(love.timer.getDelta())
     lg.push()
     lg.translate(ox, oy)
-    self.background:draw(self.angle * 120, 0)
+    if self.sky then
+        self.sky:draw(self:skyYaw(), self:skyPitch(), SKY_FOV)
+    else
+        self.background:draw(self.angle * 120, 0)
+    end
     self:drawField()
     -- aim marker on the ground
     if self.aim then

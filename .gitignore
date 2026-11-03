@@ -1,7 +1,6 @@
 # builds
 *.love
 build/
-web/
 dist/
 # editors and OS
 .DS_Store

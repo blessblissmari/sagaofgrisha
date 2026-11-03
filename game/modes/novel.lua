@@ -125,10 +125,16 @@ end
 
 -- script commands -------------------------------------------------------------------
 
-function Novel:cmd_bg(s, name, transition)
+function Novel:cmd_bg(s, name, transition, opts)
     if transition == false or transition == "none" or not self.background then
         self:setBackground(name)
         return nil
+    end
+    -- any screen transition: s:bg("castle", "page"), s:bg("night", "starwars", { direction = { 0, 1 } })
+    if type(transition) == "string" and transition ~= "fade" and scene.transitions[transition] then
+        local info = scene.transitions[transition]
+        scene.transition(function() self:setBackground(name) end, transition, opts)
+        return ((opts and opts.duration) or info.duration or 1) + 0.05
     end
     -- fade through black
     self.timer:tween(0.35, self, { fade = 1 }, "quadIn", function()

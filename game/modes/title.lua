@@ -115,6 +115,8 @@ function Title:setMenu(items, caption)
         align = "center", width = 360,
         cancel = #self.stack > 0 and function() self:back() end or nil,
     })
+    -- long lists scroll so the window always fits on the screen
+    self.menu.visible = math.max(3, math.floor((screen.height - 150 - 60 - 40 - (caption and 40 or 0)) / self.menu.spacing))
 end
 
 function Title:pushMenu(items, caption)
@@ -153,7 +155,7 @@ function Title:draw()
     end
     local w = 440
     local h = self.menu:getHeight() + 40 + (self.caption and 40 or 0)
-    local x, y = math.floor(cx - w / 2), math.floor(math.max(160, (screen.height - h) / 2 + 40))
+    local x, y = math.floor(cx - w / 2), math.floor(math.max(150, (screen.height - h) / 2 + 40))
     ui.panel.draw(x, y, w, h)
     local my = y + 20
     if self.caption then

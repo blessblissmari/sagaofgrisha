@@ -37,6 +37,7 @@ local engine = {
     voice = require("engine.voice"),
     emote = require("engine.emote"),
     Weather = require("engine.weather"),
+    Sky = require("engine.sky"),
 }
 
 local input, screen, scene = engine.input, engine.screen, engine.scene
