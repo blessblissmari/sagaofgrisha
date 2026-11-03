@@ -45,6 +45,41 @@ local function arcade(cols, row, opts)
     }
 end
 
+-- Isometric characters (kind = "iso"): rows for SE and NE, mirrored for SW and NW.
+-- "Tiny Tactics - Battle Kit I" by tiopalada (CC0): 4 columns x 9 rows of 32x32
+-- (see tools/build_iso_assets.py)
+local function tinyTactics(name)
+    return {
+        image = "assets/sprites/iso/" .. name .. ".png", frame = { 32, 32 }, origin = { 16, 27 }, default = "idle.se",
+        animations = {
+            idle = { se = { "1-4", 1, 0.2 }, ne = { "1-4", 4, 0.2 } },
+            walk = { se = { "1-4", 2, 0.11 }, ne = { "1-4", 5, 0.11 } },
+            attack = { se = { "1-4", 3, 0.06, "pauseAtEnd" }, ne = { "1-4", 6, 0.06, "pauseAtEnd" } },
+            charge = { se = { 1, 7, 1 }, ne = { 2, 8, 1 } },
+            hurt = { se = { 2, 7, 1 }, ne = { 3, 8, 1 } },
+            dead = { se = { 3, 7, 1 }, ne = { 4, 8, 1 } },
+            release = { se = { 4, 7, 1 }, ne = { 1, 9, 1 } },
+            weak = { se = { 1, 8, 1 }, ne = { 2, 9, 1 } },
+        },
+    }
+end
+
+-- "Isometric Classic Hero" by DezrasDragons (CC0, after GrafxKid's Classic Hero):
+-- 11 characters side by side, each 4 columns x 7 rows of 32x32
+local function classicHero(index)
+    return {
+        image = "assets/sprites/iso/classic_heroes.png", frame = { 32, 32 }, left = index * 128,
+        origin = { 17, 31 }, default = "idle.se",
+        animations = {
+            idle = { se = { "1-4", 1, 0.2 }, ne = { "1-4", 4, 0.2 } },
+            walk = { se = { "1-4", 2, 0.11 }, ne = { "1-4", 5, 0.11 } },
+            attack = { se = { "1-3", 3, 0.08, "pauseAtEnd" }, ne = { "1-3", 6, 0.08, "pauseAtEnd" } },
+            charge = { se = { 1, 3, 1 }, ne = { 1, 6, 1 } },
+            hurt = { se = { 1, 1, 1 }, ne = { 1, 4, 1 } },
+        },
+    }
+end
+
 return {
     -- Гриша from above (top-down modes)
     grisha = {
@@ -127,4 +162,13 @@ return {
     coin = arcade("5-8", 8, { speed = 0.1 }),
     sparkle = arcade("9-12", 8, { speed = 0.08 }),
     puff = arcade("1-5", 9, { speed = 0.06 }),
+
+    -- isometric mode
+    iso_hero = tinyTactics("fighter"),
+    iso_mage = tinyTactics("mage"),
+    iso_cleric = tinyTactics("cleric"),
+    iso_bald = classicHero(0), iso_ninja = classicHero(1), iso_knight = classicHero(2),
+    iso_viking = classicHero(3), iso_adventurer = classicHero(4), iso_hood = classicHero(5),
+    iso_pirate = classicHero(6), iso_samurai = classicHero(7), iso_spearman = classicHero(8),
+    iso_gunner = classicHero(9), iso_spartan = classicHero(10),
 }

@@ -45,6 +45,13 @@ return {
             run = { "lshift", "rshift" },
         },
         -- the side view
+        iso = {                             -- isometric field with real-time fights
+            interact = { "e", "f" },
+            attack = { "space", "j" },
+            dash = { "lshift", "rshift", "l" }, -- quick dodge (no damage while dashing)
+            throw = { "k" },
+            tech = { "q" },                 -- the duo tech with the pet (the bar is full)
+        },
         platformer = {
             jump = { "space", "z", "w", "up" },
             dash = { "lshift", "rshift", "c" },
@@ -112,7 +119,7 @@ return {
     pad = {
         up = { "dpup" }, down = { "dpdown" }, left = { "dpleft" }, right = { "dpright" },
         confirm = { "a" }, cancel = { "b" }, interact = { "a" }, attack = { "x" },
-        throw = { "y" }, pause = { "start" }, inventory = { "back" }, view = { "rightstick" },
+        throw = { "y" }, dash = { "leftshoulder" }, tech = { "rightshoulder" }, pause = { "start" }, inventory = { "back" }, view = { "rightstick" },
         camLeft = { "leftshoulder" }, camRight = { "rightshoulder" },
         rotateCW = { "a" }, rotateCCW = { "b" }, hardDrop = { "dpup" }, hold = { "rightshoulder" },
         jump = { "a" }, dash = { "rightshoulder" }, punch = { "x" },

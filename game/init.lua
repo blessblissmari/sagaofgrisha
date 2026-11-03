@@ -68,7 +68,7 @@ local game = {
         platformer = "game.modes.platformer", raycaster = "game.modes.raycaster",
         battle = "game.modes.battle", tactics = "game.modes.tactics", tetris = "game.modes.tetris",
         puyo = "game.modes.puyo", breakout = "game.modes.breakout", xonix = "game.modes.xonix",
-        cards = "game.modes.cards",
+        cards = "game.modes.cards", iso = "game.modes.iso",
     },
 }
 

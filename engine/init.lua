@@ -7,7 +7,8 @@
 -- Modules (all of them can also be required one by one):
 --   class, util, timer, input, screen, scene, assets, shaders, audio, anim,
 --   fx, ui, dialogue, tiled, Camera, World, Entity, Triggers, Inventory,
---   Background, Trail (followers), physics (platformers), save, debug, voice
+--   Background, Trail (followers), physics (platformers), save, debug, voice,
+--   IsoMap (isometric Tiled maps with height levels)
 
 local engine = {
     class = require("engine.class"),
@@ -38,6 +39,7 @@ local engine = {
     emote = require("engine.emote"),
     Weather = require("engine.weather"),
     Sky = require("engine.sky"),
+    IsoMap = require("engine.isomap"),
 }
 
 local input, screen, scene = engine.input, engine.screen, engine.scene

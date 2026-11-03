@@ -48,15 +48,15 @@ function hud.draw(opts)
         ui.icon("key", 14, y - 4, 0.75)
         ui.print(keys, 46, y, { font = "small", color = "light", shadow = true })
     end
+    local a = opts.hint and hud.hintAlpha(opts.hint, opts.owner) or 0
     if opts.prompt then
-        ui.keyHint(screen.width / 2, screen.height - 46, opts.promptAction or "interact", opts.prompt)
+        -- above the key hints while they are on the screen
+        local py = screen.height - 46 - (a > 0 and math.floor(22 * math.min(1, a * 2)) or 0)
+        ui.keyHint(screen.width / 2, py, opts.promptAction or "interact", opts.prompt)
     end
-    if opts.hint then
-        local a = hud.hintAlpha(opts.hint, opts.owner)
-        if a > 0 then
-            ui.print(opts.hint, screen.width - 14, screen.height - 26,
-                { font = "small", align = "right", color = "light", shadow = true, alpha = 0.8 * a })
-        end
+    if a > 0 then
+        ui.print(opts.hint, screen.width - 14, screen.height - 26,
+            { font = "small", align = "right", color = "light", shadow = true, alpha = 0.8 * a })
     end
 end
 

@@ -11,7 +11,7 @@
 
 return {
     bunny = {
-        name = "Кашка", sprite = "bunny", steps = "paws", character = "bunny", sideScale = 0.11,
+        name = "Кашка", sprite = "bunny", steps = "paws", character = "bunny", sideScale = 0.11, isoScale = 0.14,
         snore = true,
         battle = { hp = 30, attack = 6, defense = 3, speed = 8, skills = { "bite", "hop", "heal", "defend" },
             growth = { hp = 4, attack = 0.9, defense = 0.5, speed = 0.2 } },

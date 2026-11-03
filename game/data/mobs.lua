@@ -67,4 +67,21 @@ return {
     saw = { name = "Пила", sprite = "saw", hp = 1, damage = 2, ai = "hazard", platformSpeed = 45, stomp = false, invulnerable = true },
     snail = { name = "Улитка", sprite = "snail", hp = 2, damage = 1, ai = "walker", platformSpeed = 12 },
     ninja = { name = "Ниндзя", sprite = "ninja", hp = 2, damage = 1, ai = "hopper", platformSpeed = 50 },
+
+    -- isometric mode (kind = "iso"): iso = { ai = "hopper" | "melee" | "caster" | "boss",
+    --   hp, damage (hearts x2), speed, reach, windup (seconds of the telegraphed swing),
+    --   parry (the last seconds of the windup when a hit parries, 0.26), armor (true: hits do not
+    --   stop its swing), aggro (how close the hero may come), xp, coins = { min, max }, scale }
+    iso_slime = { name = "Слизень", sprite = "slime",
+        iso = { ai = "hopper", hp = 4, damage = 1, speed = 40, xp = 4, coins = { 1, 2 }, scale = 1 },
+        drops = { { item = "carrot", chance = 0.15 } } },
+    iso_ninja = { name = "Разбойник", sprite = "iso_ninja",
+        iso = { ai = "melee", hp = 8, damage = 1, speed = 46, reach = 15, windup = 0.5, armor = true, xp = 9, coins = { 2, 4 } },
+        drops = { { item = "stone", chance = 0.4 } } },
+    iso_mage = { name = "Колдун", sprite = "iso_mage",
+        iso = { ai = "caster", hp = 6, damage = 1, speed = 32, xp = 11, coins = { 3, 5 } },
+        drops = { { item = "ether", chance = 0.3 } } },
+    iso_samurai = { name = "Ронин", sprite = "iso_samurai",
+        iso = { ai = "boss", hp = 36, damage = 2, speed = 44, reach = 17, windup = 0.45, parry = 0.2, xp = 30, coins = { 10, 15 } },
+        drops = { { item = "potion", chance = 1 } } },
 }
