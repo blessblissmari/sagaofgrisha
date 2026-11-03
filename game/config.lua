@@ -25,9 +25,12 @@ return {
         punch = { "j", "x" },
         -- raycaster (forward / back are up / down)
         turnLeft = { "left", "q" },
-        turnRight = { "right" },
+        turnRight = { "right", "e" },
         strafeLeft = { "a" },
         strafeRight = { "d" },
+        use = { "f", "return" },        -- open doors, talk, pick up in the dungeon
+        block = { "lshift", "rshift" }, -- hold: block with the weapon
+        map = { "m" },                  -- the automap
         -- battle camera
         view = { "v" },                 -- top-down <-> isometric
         camLeft = { "q" },
@@ -52,6 +55,7 @@ return {
         rotateCW = { "a" }, rotateCCW = { "b" }, hardDrop = { "dpup" }, hold = { "rightshoulder" },
         jump = { "a" }, dash = { "rightshoulder" }, punch = { "x" },
         turnLeft = { "leftshoulder" }, turnRight = { "rightshoulder" },
+        use = { "a" }, block = { "y" }, map = { "leftstick" },
         skip = { "leftshoulder" },
     },
 
