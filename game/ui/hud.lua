@@ -11,6 +11,26 @@ end
 
 local hud = {}
 
+-- the key hints are shown only for a few seconds after a stage starts (and while
+-- the game stands still for a long time), so they don't hang on the screen forever
+local hint = { text = nil, owner = nil, since = 0, idle = 0 }
+hud.HINT_TIME = 7
+
+-- alpha of a hint line: 1 in the first seconds, then it fades out
+function hud.hintAlpha(text, owner)
+    local now = love.timer.getTime()
+    if hint.text ~= text or hint.owner ~= owner then
+        hint.text, hint.owner, hint.since = text, owner, now
+    end
+    local age = now - hint.since
+    return math.max(0, math.min(1, hud.HINT_TIME - age))
+end
+
+-- show the hints again (after the pause menu, for example)
+function hud.showHints()
+    hint.since = love.timer.getTime()
+end
+
 -- opts: prompt (text for the interact key), hint (bottom line), coins (default true)
 function hud.draw(opts)
     opts = opts or {}
@@ -32,8 +52,11 @@ function hud.draw(opts)
         ui.keyHint(screen.width / 2, screen.height - 46, opts.promptAction or "interact", opts.prompt)
     end
     if opts.hint then
-        ui.print(opts.hint, screen.width - 14, screen.height - 26,
-            { font = "small", align = "right", color = "light", shadow = true, alpha = 0.8 })
+        local a = hud.hintAlpha(opts.hint, opts.owner)
+        if a > 0 then
+            ui.print(opts.hint, screen.width - 14, screen.height - 26,
+                { font = "small", align = "right", color = "light", shadow = true, alpha = 0.8 * a })
+        end
     end
 end
 

@@ -44,7 +44,7 @@ local Battle = class(Mode)
 Battle.keymap = "battle"
 
 local FIELD_W, FIELD_H, CELL = 520, 280, 40
-local CX, CY = 480, 262
+local CX, CY = 480, 290
 local COM = rules.COM
 local MAX_BP = 5
 
@@ -396,8 +396,9 @@ end
 
 -- top = true: the main command menu, [Esc] opens the pause menu there
 function Battle:chooseMenu(items, caption, top, help)
-    self.menu = ui.Menu(items, { font = ui.font("body") })
-    self.menu.visible = 6
+    -- the main commands in two columns, lists in one; three rows fit the bottom window
+    self.menu = ui.Menu(items, { font = ui.font("small"), columns = top and 2 or 1, columnGap = 36, visible = 3,
+        cursorScale = (ui.theme.cursorScale or 1) * 0.8 })
     self.menuCaption = caption
     self.menuTop = top
     while true do
@@ -1626,19 +1627,13 @@ end
 
 local function shieldBadge(x, y, value, broken)
     local lg = love.graphics
-    local w, h = 22, 24
+    local w, h = 16, 18
     local pts = { x - w / 2, y - h / 2, x + w / 2, y - h / 2, x + w / 2, y + 2, x, y + h / 2, x - w / 2, y + 2 }
     lg.setColor(0.05, 0.05, 0.15, 0.9)
     lg.polygon("fill", pts)
-    if broken then
-        lg.setColor(0.55, 0.5, 0.5, 1)
-    else
-        lg.setColor(0.7, 0.8, 1, 1)
-    end
-    lg.setLineWidth(2)
+    lg.setColor(broken and { 0.55, 0.5, 0.5, 1 } or { 0.7, 0.8, 1, 1 })
     lg.polygon("line", pts)
-    lg.setLineWidth(1)
-    ui.print(broken and "×" or tostring(value), x, y - 11, { font = "small", align = "center", color = broken and "faded" or "ink" })
+    ui.print(broken and "x" or tostring(value), x, y - 11, { font = "small", align = "center", color = broken and "faded" or "ink" })
 end
 
 function Battle:drawUnit(u)
@@ -1703,36 +1698,21 @@ function Battle:drawUnit(u)
     lg.setColor(1, 1, 1, 1)
 end
 
--- hp, shield, weaknesses and statuses over an enemy
+-- over an enemy only the essentials: a thin hp bar, the shield and a "!" when
+-- it is about to act (the rest is in the target info, when the cursor is on it)
 function Battle:drawEnemyInfo(u)
     if u.hp <= 0 or not u.screenX then
         return
     end
     local lg = love.graphics
     local sx, sy, s = u.screenX, u.screenY, u.screenScale
-    local w = 56
-    ui.bar(math.floor(sx - w / 2), math.floor(sy + 10), w, 5, u.hp, u.maxHp, "red")
+    local w = 40
+    ui.bar(math.floor(sx - w / 2), math.floor(sy + 8), w, 4, u.hp, u.maxHp, "red")
     if u.maxShield > 0 then
-        shieldBadge(sx - w / 2 - 14, sy + 12, u.shield, u.broken)
+        shieldBadge(math.floor(sx - w / 2 - 11), math.floor(sy + 10), u.shield, u.broken)
     end
-    -- weaknesses: the icons of the types (unknown = "?")
-    if u.weak and #u.weak > 0 then
-        local n = #u.weak
-        local x = sx - (n * 18) / 2 + 9
-        for _, wtype in ipairs(u.weak) do
-            if u.known[wtype] == "weak" then
-                ui.icon(rules.typeIcons[wtype] or "stone", x - 8, sy + 20, 0.5)
-            else
-                lg.setColor(0.05, 0.05, 0.15, 0.85)
-                lg.rectangle("fill", x - 8, sy + 20, 16, 16)
-                ui.print("?", x, sy + 19, { font = "small", align = "center", color = "faded" })
-            end
-            x = x + 18
-        end
-    end
-    self:drawStatuses(u, sx + w / 2 + 6, sy + 6)
+    self:drawStatuses(u, math.floor(sx + w / 2 + 4), math.floor(sy + 4))
     if u.broken then
-        ui.print("BREAK", sx, sy - 80 * s, { font = "small", align = "center", color = "gold" })
         -- little stars around the head
         for i = 1, 3 do
             local a = self.clock * 4 + i * 2.1
@@ -1740,22 +1720,16 @@ function Battle:drawEnemyInfo(u)
             lg.circle("fill", sx + math.cos(a) * 18 * s, sy - 62 * s + math.sin(a) * 5 * s, 3)
         end
     end
-    -- the intent: what and whom
+    -- about to act: a red "!" and a thin line to the target
     if u.intent and u.phase == "cast" then
-        local text = u.intent.skill.name
+        local hy = math.floor(sy - 96 * s)
+        local pulse = 0.6 + 0.4 * math.abs(math.sin(self.clock * 6))
+        ui.print("!", sx, hy - 10, { font = "pixel", align = "center", color = "red", alpha = pulse })
         local t = u.intent.target
-        if type(t) == "table" and t.name then
-            text = text .. " → " .. t.name
-        end
-        local font = ui.font("small")
-        local tw = font:getWidth(text) + 20
-        local ix, iy = math.floor(sx - tw / 2), math.floor(sy - 104 * s - 10)
-        ui.panel.draw(ix, iy, tw, font:getHeight() + 8, "small")
-        ui.print(text, sx, iy + 4, { font = font, align = "center", color = "red" })
         if type(t) == "table" and t.screenX and t.hp and t.hp > 0 then
-            lg.setColor(1, 0.35, 0.3, 0.35 + 0.2 * math.sin(self.clock * 8))
+            lg.setColor(1, 0.35, 0.3, 0.25 * pulse)
             lg.setLineWidth(2)
-            lg.line(sx, iy + font:getHeight() + 8, t.screenX, t.screenY - 60 * t.screenScale)
+            lg.line(sx, hy + 10, t.screenX, t.screenY - 50 * t.screenScale)
             lg.setLineWidth(1)
         end
     end
@@ -1764,15 +1738,12 @@ end
 
 function Battle:drawStatuses(u, x, y)
     local g = G()
-    for id, s in pairs(u.status) do
+    local font = ui.font("small")
+    for id in pairs(u.status) do
         local def = g.statuses[id]
         if def then
-            local font = ui.font("small")
-            local w = font:getWidth(def.short) + 8
-            love.graphics.setColor(0.05, 0.05, 0.15, 0.85)
-            love.graphics.rectangle("fill", x, y, w, 18)
-            ui.print(def.short, x + 4, y - 1, { font = font, color = def.color })
-            x = x + w + 3
+            ui.print(def.short, x, y - 2, { font = font, color = def.color })
+            x = x + font:getWidth(def.short) + 6
         end
     end
 end
@@ -1854,21 +1825,28 @@ function Battle:drawIcon(u, x, y, r)
     end
 end
 
+-- the HUD has fixed places, so nothing lies on top of anything:
+--   top     the timeline and one line of text (help / what happens now)
+--   field   only small marks in the world (hp bars, "!", numbers, the cursor)
+--   bottom  one window: commands or target info on the left, the party on the right
+local HUD_H = 118
+local LEFT_W = 372
+
 function Battle:drawTimeline()
     local lg = love.graphics
-    local x0, x1, y = 200, 760, 34
+    local x0, x1, y = 250, 710, 20
     local W = x1 - x0
     local cx = x0 + W * COM
-    ui.panel.draw(x0 - 24, y - 26, W + 48, 52, "small")
-    lg.setColor(0.25, 0.45, 0.9, 0.9)
-    lg.rectangle("fill", x0, y - 4, cx - x0, 8)
-    lg.setColor(0.95, 0.55, 0.2, 0.95)
-    lg.rectangle("fill", cx, y - 4, x1 - cx, 8)
-    lg.setColor(1, 1, 1, 1)
-    lg.rectangle("fill", cx - 1, y - 9, 3, 18)
-    lg.rectangle("fill", x1 - 1, y - 9, 3, 18)
-    ui.print("ход", cx, y + 8, { font = "small", align = "center", color = "light", alpha = 0.6 })
-    -- enemies below the bar, the party above
+    lg.setColor(0.02, 0.03, 0.12, 0.55)
+    lg.rectangle("fill", x0 - 14, y - 6, W + 28, 12, 6, 6)
+    lg.setColor(0.35, 0.55, 1, 0.9)
+    lg.rectangle("fill", x0, y - 2, cx - x0, 4)
+    lg.setColor(1, 0.6, 0.25, 0.95)
+    lg.rectangle("fill", cx, y - 2, x1 - cx, 4)
+    lg.setColor(1, 1, 1, 0.9)
+    lg.rectangle("fill", cx - 1, y - 6, 2, 12)
+    lg.rectangle("fill", x1 - 1, y - 6, 2, 12)
+    -- the party above the line, enemies under it
     local order = {}
     for _, u in ipairs(self.units) do
         if u.hp > 0 then
@@ -1878,152 +1856,166 @@ function Battle:drawTimeline()
     table.sort(order, function(a, b) return a.p < b.p end)
     for _, u in ipairs(order) do
         local px = x0 + W * math.min(1, u.p)
-        local py = u.side == "party" and y - 16 or y + 16
+        local py = u.side == "party" and y - 1 or y + 1
         if u.phase == "cast" and u.side == "enemy" then
-            lg.setColor(1, 0.3, 0.25, 0.5 + 0.3 * math.sin(self.clock * 10))
-            lg.circle("fill", px, py, 15)
+            lg.setColor(1, 0.3, 0.25, 0.4 + 0.3 * math.sin(self.clock * 10))
+            lg.circle("fill", px, py + 10, 13)
         end
-        self:drawIcon(u, px, py, 12)
+        self:drawIcon(u, px, u.side == "party" and py - 10 or py + 10, 10)
+    end
+end
+
+-- one line under the timeline: what is chosen / what happens
+function Battle:drawTopLine(text, color)
+    if not text or text == "" then
+        return
+    end
+    local W = screen.width
+    local font = ui.font("small")
+    local w = math.min(W - 40, font:getWidth(text) + 28)
+    local _, lines = font:getWrap(text, w - 20)
+    local h = #lines * font:getHeight() + 6
+    love.graphics.setColor(0.02, 0.03, 0.12, 0.6)
+    love.graphics.rectangle("fill", (W - w) / 2, 44, w, h, 4, 4)
+    ui.print(text, (W - w) / 2 + 10, 46, { font = font, width = w - 20, align = "center", color = color or "light" })
+end
+
+function Battle:drawParty(x, y, w)
+    local lg = love.graphics
+    local rowH = 30
+    for i, u in ipairs(self.party) do
+        local ry = y + (i - 1) * rowH
+        local color = u.hp <= 0 and "faded" or ((self.choosing == u or self.active == u) and "accent" or "ink")
+        ui.print(u.name, x, ry, { font = "small", color = color })
+        ui.bar(x + 130, ry + 8, 120, 6, u.hp, u.maxHp, u.hp / u.maxHp < 0.3 and "red" or "green")
+        ui.print(u.hp .. "/" .. u.maxHp, x + 330, ry, { font = "small", color = color, align = "right" })
+        for k = 1, MAX_BP do
+            local bx, by = x + 352 + (k - 1) * 13, ry + 11
+            lg.setColor(k <= (u.bp or 0) and { 1, 0.85, 0.3, 1 } or { 0.2, 0.22, 0.4, 1 })
+            lg.polygon("fill", bx, by - 5, bx + 4, by, bx, by + 5, bx - 4, by)
+        end
+        self:drawStatuses(u, x + 424, ry)
+    end
+    -- the duo gauge
+    local dy = y + #self.party * rowH + 4
+    local ready = self.duo >= 100
+    ui.print(ready and "Дуэт готов" or "Дружба", x, dy, { font = "small", color = ready and "gold" or "faded" })
+    ui.bar(x + 130, dy + 8, w - 150, 6, self.duo, 100, ready and "gold" or "blue")
+end
+
+function Battle:drawTargetInfo(u, x, y)
+    local font = ui.font("small")
+    local fh = font:getHeight()
+    ui.print(u.name, x, y, { font = font, color = "accent" })
+    ui.print(u.hp .. "/" .. u.maxHp, x + LEFT_W - 50, y, { font = font, align = "right" })
+    if u.side ~= "enemy" then
+        return
+    end
+    local ly = y + fh + 2
+    if u.weak and #u.weak > 0 then
+        ui.print("Слабость:", x, ly, { font = font, color = "faded" })
+        local ix = x + font:getWidth("Слабость:") + 10
+        for _, wt in ipairs(u.weak) do
+            if u.known[wt] == "weak" then
+                ui.icon(rules.typeIcons[wt] or "stone", ix, ly + 2, 0.5)
+                ix = ix + 20
+            else
+                ui.print("?", ix + 4, ly, { font = font, color = "faded" })
+                ix = ix + 18
+            end
+        end
+        ly = ly + fh + 2
+    end
+    if u.intent then
+        local t = u.intent.target
+        local who = type(t) == "table" and t.name and (" → " .. t.name) or ""
+        ui.print("Готовит: " .. u.intent.skill.name .. who, x, ly, { font = font, color = "red" })
     end
 end
 
 function Battle:drawHud()
-    local lg = love.graphics
     local W, H = screen.width, screen.height
     if not self.results then
         self:drawTimeline()
     end
-    -- party window: name, hp, brave points, statuses; the duo gauge under it
-    local rowH = 40
-    local pw, ph = 470, 26 + #self.party * rowH + 30
-    local px, py = W - pw - 14, H - ph - 12
-    ui.panel.draw(px, py, pw, ph)
-    for i, u in ipairs(self.party) do
-        local y = py + 12 + (i - 1) * rowH
-        local color = u.hp <= 0 and "faded" or ((self.choosing == u or self.active == u) and "accent" or "ink")
-        ui.print(u.name, px + 18, y, { font = "body", color = color })
-        ui.print("ур." .. (u.stats and u.stats.level or 1), px + 18, y + 26, { font = "tiny", color = "faded" })
-        ui.bar(px + 150, y + 10, 140, 10, u.hp, u.maxHp, u.hp / u.maxHp < 0.3 and "red" or "green")
-        ui.print(u.hp .. "/" .. u.maxHp, px + 150, y + 20, { font = "small", color = color })
-        -- brave points
-        for k = 1, MAX_BP do
-            local bx, by = px + 310 + (k - 1) * 15, y + 14
-            if k <= (u.bp or 0) then
-                lg.setColor(1, 0.85, 0.3, 1)
-            else
-                lg.setColor(0.2, 0.22, 0.4, 1)
-            end
-            lg.polygon("fill", bx, by - 6, bx + 5, by, bx, by + 6, bx - 5, by)
-        end
-        self:drawStatuses(u, px + 392, y + 4)
-    end
-    local dy = py + ph - 28
-    ui.print("Дружба", px + 18, dy - 4, { font = "small", color = self.duo >= 100 and "accent" or "faded" })
-    ui.bar(px + 120, dy + 2, pw - 140, 8, self.duo, 100, self.duo >= 100 and "gold" or "blue")
-    if self.duo >= 100 and math.floor(self.clock * 3) % 2 == 0 then
-        ui.print("★ Дуэт готов", px + pw - 20, dy - 18, { font = "small", align = "right", color = "gold" })
-    end
-    -- command menu + help line
+    -- top line: the selected command's help, the target question or the news
+    local sel = self.menu and self.menu:selected()
+    local help = sel and (sel.help or (sel.skill and sel.skill.description))
     if self.menu then
-        local mw = math.max(230, self.menu:getWidth() + 90)
-        local mh = self.menu:getHeight() + 56
-        local mx, my = 14, H - mh - 12
-        ui.panel.draw(mx, my, mw, mh)
-        ui.print(self.menuCaption or "", mx + 20, my + 8, { font = "small", color = "accent" })
-        self.menu:draw(mx + 50, my + 36)
-        local sel = self.menu:selected()
-        local help = sel and (sel.help or (sel.skill and sel.skill.description))
-        if help then
-            local hw = math.min(W - 28, 900)
-            local font = ui.font("small")
-            ui.panel.draw(14, 78, hw, font:getHeight() * 2 + 18, "small")
-            ui.print(help, 26, 84, { font = font, width = hw - 24 })
-        end
+        self:drawTopLine(help)
+    elseif self.log and not self.results then
+        self:drawTopLine(self.log, "accent")
     end
-    -- info about the target under the cursor
-    if self.cursor and not self.targetAll then
-        local u = self.cursor
-        local font = ui.font("small")
-        local lines = { u.name .. "   " .. u.hp .. "/" .. u.maxHp }
-        if u.side == "enemy" then
-            local weak = {}
-            for _, wt in ipairs(u.weak or {}) do
-                table.insert(weak, u.known[wt] == "weak" and rules.typeNames[wt] or "?")
-            end
-            if #weak > 0 then
-                table.insert(lines, "Слабости: " .. table.concat(weak, ", "))
-            end
-            if u.intent then
-                table.insert(lines, "Готовит: " .. u.intent.skill.name)
-            end
-        end
-        local w = 360
-        ui.panel.draw(W / 2 - w / 2, 78, w, #lines * font:getHeight() + 16, "small")
-        for i, line in ipairs(lines) do
-            ui.print(line, W / 2, 86 + (i - 1) * font:getHeight(), { font = font, align = "center", color = i == 1 and "accent" or "ink" })
-        end
+    -- the bottom window
+    local bx, by, bw = 8, H - HUD_H - 8, W - 16
+    ui.panel.draw(bx, by, bw, HUD_H)
+    love.graphics.setColor(0.85, 0.88, 1, 0.25)
+    love.graphics.rectangle("fill", bx + LEFT_W, by + 10, 2, HUD_H - 20)
+    local lx, ly = bx + 18, by + 10
+    if self.menu then
+        self.menu:draw(lx + 28, ly + 2)
+    elseif self.cursor and not self.targetAll then
+        self:drawTargetInfo(self.cursor, lx, ly)
+    elseif self.cursor and self.targetAll then
+        ui.print("Все цели", lx, ly, { font = "small", color = "accent" })
+    elseif not self.results then
+        local hints = "[" .. input.keyName("view") .. "] вид   [" .. input.keyName("camLeft") .. "/" .. input.keyName("camRight")
+            .. "] камера   [" .. input.keyName("fast") .. "] быстрее"
+        ui.print(hints, lx, by + HUD_H - 34, { font = "small", color = "faded", width = LEFT_W - 30 })
     end
-    -- message line
-    if self.log and not self.menu then
-        local font = ui.font("body")
-        local w = font:getWidth(self.log) + 50
-        ui.panel.draw((W - w) / 2, 76, w, font:getHeight() + 14)
-        ui.print(self.log, W / 2, 82, { font = font, align = "center" })
-    end
+    self:drawParty(bx + LEFT_W + 20, by + 12, bw - LEFT_W - 40)
     -- QTE windows without a target in the world (bars, mash, hold)
     if self.qteObj and not self.qteObj.target then
         self.qteObj:draw(self)
     end
     if self.shoutText then
+        local lg = love.graphics
         local st = self.shoutText
         local k = st.t / st.life
-        local s = 1 + (1 - math.min(1, k * 4)) * 0.6
+        local sc = 1 + (1 - math.min(1, k * 4)) * 0.6
         lg.push()
-        lg.translate(W / 2, 200)
-        lg.scale(s, s)
+        lg.translate(W / 2, 190)
+        lg.scale(sc, sc)
         ui.print(st.text, 0, -16, { font = "title", align = "center", color = st.color, alpha = 1 - math.max(0, k - 0.7) / 0.3,
             outline = { 0.1, 0.05, 0.1 } })
         lg.pop()
     end
     if self.banner then
-        ui.banner(self.banner, W / 2, 120, 420, { font = "title" })
+        ui.banner(self.banner, W / 2, 110, 420, { font = "title" })
     end
     if self.results then
         self:drawResults()
-    end
-    if not self.menu and not self.results then
-        ui.print("[" .. input.keyName("view") .. "] вид  [" .. input.keyName("camLeft") .. "/" .. input.keyName("camRight")
-            .. "] камера  [" .. input.keyName("fast") .. "] быстрее", 16, H - 30, { font = "small", color = "light", alpha = 0.6 })
     end
 end
 
 function Battle:drawResults()
     local r = self.results
-    local W = screen.width
-    local w, h = 520, 120 + #r.rows * 46 + math.max(1, #r.loot) * 24
-    local x, y = (W - w) / 2, 190
+    local W, H = screen.width, screen.height
+    local font = ui.font("small")
+    local rowH = 30
+    local w = 460
+    local h = 44 + #r.rows * rowH + 10 + math.max(1, #r.loot) * 22 + 36
+    local x, y = (W - w) / 2, math.max(150, (H - HUD_H - 8 - h) / 2 + 30)
     ui.panel.draw(x, y, w, h)
-    ui.print("Опыт: +" .. r.xp, x + 24, y + 14, { font = "body", color = "accent" })
+    ui.print("Опыт +" .. r.xp, x + 20, y + 12, { font = font, color = "accent" })
     for i, row in ipairs(r.rows) do
-        local ry = y + 56 + (i - 1) * 46
-        ui.print(row.unit.name .. "   ур. " .. row.level, x + 24, ry, { font = "body" })
-        ui.bar(x + 270, ry + 12, 220, 10, row.xp, row.need, "gold")
-        if #row.ups > 0 and math.floor(r.t * 3) % 2 == 0 then
-            ui.print("Новый уровень!", x + 270, ry - 12, { font = "small", color = "gold" })
-        end
+        local ry = y + 44 + (i - 1) * rowH
+        ui.print(row.unit.name, x + 20, ry, { font = font })
+        ui.print("ур. " .. row.level, x + 130, ry, { font = font, color = #row.ups > 0 and "gold" or "faded" })
+        ui.bar(x + 210, ry + 8, 220, 6, row.xp, row.need, "gold")
     end
-    local ly = y + 64 + #r.rows * 46
-    ui.print("Добыча:", x + 24, ly, { font = "small", color = "faded" })
+    local ly = y + 44 + #r.rows * rowH + 10
     if #r.loot == 0 then
-        ui.print("—", x + 130, ly, { font = "small" })
+        ui.print("Добычи нет", x + 20, ly, { font = font, color = "faded" })
     end
     for i, l in ipairs(r.loot) do
+        local iy = ly + (i - 1) * 22
         if l.icon then
-            ui.icon(l.icon, x + 130, ly + (i - 1) * 24 - 2, 0.6)
+            ui.icon(l.icon, x + 20, iy, 0.5)
         end
-        ui.print(l.text, x + 160, ly + (i - 1) * 24, { font = "small" })
+        ui.print(l.text, x + 44, iy, { font = font })
     end
-    ui.keyHints(x + w - 20, y + h - 34, { { "confirm", "Дальше" } }, "right")
+    ui.keyHints(x + w - 16, y + h - 30, { { "confirm", "Дальше" } }, "right")
 end
 
 return Battle

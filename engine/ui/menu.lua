@@ -12,7 +12,9 @@
 --   menu:draw(x, y)
 --
 -- opts: font, align ("left" / "center"), spacing, width, style ("plain" / "buttons"),
---       color, selectedColor, disabledColor, shadow, cancel, onMove(index), index
+--       color, selectedColor, disabledColor, shadow, cancel, onMove(index), index,
+--       visible (rows on the screen, the rest scrolls), columns (a grid: 2 = two
+--       columns, items go row by row, left / right switch columns), columnGap
 
 local audio = require("engine.audio")
 local class = require("engine.class")
@@ -47,7 +49,10 @@ function Menu:init(items, opts)
         or math.floor(self.font:getHeight() * (theme.menuSpacing or 1.15)))
     self.width = opts.width
     self.visible = opts.visible -- show at most this many rows and scroll (arrows show more)
-    self.first = 1
+    self.columns = math.max(1, opts.columns or 1)
+    self.columnGap = opts.columnGap or 44
+    self.cursorScale = opts.cursorScale
+    self.first = 1 -- the first row on the screen
     self.color = opts.color or theme.colors.ink
     self.selectedColor = opts.selectedColor or theme.colors.accent
     self.disabledColor = opts.disabledColor or theme.colors.faded
@@ -94,6 +99,42 @@ function Menu:move(delta, silent)
     end
 end
 
+-- grid: step by rows (dr) or columns (dc), skipping disabled items
+function Menu:moveGrid(dr, dc)
+    local n, cols = #self.items, self.columns
+    if n == 0 then
+        return
+    end
+    local total = math.ceil(n / cols)
+    local start = self.index
+    local r, c = math.floor((self.index - 1) / cols), (self.index - 1) % cols
+    for _ = 1, n do
+        if dc ~= 0 then
+            c = (c + dc) % cols
+            -- the last row can be shorter
+            if r * cols + c + 1 > n then
+                c = dc > 0 and 0 or (n - 1) % cols
+            end
+        else
+            r = (r + dr) % total
+            if r * cols + c + 1 > n then
+                r = dr > 0 and 0 or total - 2
+            end
+        end
+        local i = r * cols + c + 1
+        if i >= 1 and i <= n and isEnabled(self.items[i]) then
+            self.index = i
+            break
+        end
+    end
+    if self.index ~= start then
+        sound("move")
+        if self.onMove then
+            self.onMove(self.index)
+        end
+    end
+end
+
 local function labelOf(item)
     local label = item.label
     if type(label) == "function" then
@@ -105,7 +146,7 @@ local function labelOf(item)
     return label
 end
 
-function Menu:getWidth()
+function Menu:columnWidth()
     if self.width then
         return self.width
     end
@@ -116,31 +157,42 @@ function Menu:getWidth()
     return w
 end
 
+function Menu:getWidth()
+    local cw = self:columnWidth()
+    return cw * self.columns + (self.columns - 1) * self.columnGap
+end
+
 function Menu:getHeight()
     return self:rows() * self.spacing
 end
 
+function Menu:totalRows()
+    return math.ceil(#self.items / self.columns)
+end
+
 -- number of rows on the screen
 function Menu:rows()
-    if self.visible and #self.items > self.visible then
+    local total = self:totalRows()
+    if self.visible and total > self.visible then
         return self.visible
     end
-    return #self.items
+    return total
 end
 
 -- keep the selected row inside the scroll window
 function Menu:scrollToIndex()
-    local rows = self:rows()
-    if rows >= #self.items then
+    local rows, total = self:rows(), self:totalRows()
+    if rows >= total then
         self.first = 1
         return
     end
-    if self.index < self.first then
-        self.first = self.index
-    elseif self.index > self.first + rows - 1 then
-        self.first = self.index - rows + 1
+    local row = math.floor((self.index - 1) / self.columns) + 1
+    if row < self.first then
+        self.first = row
+    elseif row > self.first + rows - 1 then
+        self.first = row - rows + 1
     end
-    self.first = math.max(1, math.min(self.first, #self.items - rows + 1))
+    self.first = math.max(1, math.min(self.first, total - rows + 1))
 end
 
 function Menu:choose()
@@ -166,14 +218,24 @@ function Menu:update(dt)
     if not self.active or #self.items == 0 then
         return nil
     end
-    if input.pressed("up", true) then
+    if self.columns > 1 then
+        if input.pressed("up", true) then
+            self:moveGrid(-1, 0)
+        elseif input.pressed("down", true) then
+            self:moveGrid(1, 0)
+        elseif input.pressed("left", true) then
+            self:moveGrid(0, -1)
+        elseif input.pressed("right", true) then
+            self:moveGrid(0, 1)
+        end
+    elseif input.pressed("up", true) then
         self:move(-1)
     elseif input.pressed("down", true) then
         self:move(1)
     end
     self:scrollToIndex()
     local item = self.items[self.index]
-    if item and item.change and isEnabled(item) then
+    if item and item.change and isEnabled(item) and self.columns == 1 then
         if input.pressed("left", true) then
             item.change(-1)
             sound("move")
@@ -211,14 +273,15 @@ function Menu:draw(x, y)
     local lg = love.graphics
     local font = self.font
     lg.setFont(font)
-    local width = self:getWidth()
+    local cols = self.columns
+    local width = self:columnWidth()
     local bob = math.floor(math.abs(math.sin(self.time * 5)) * 4 + 0.5)
     local px = theme.pixelOf(font)
     local shadowColor = theme.colors.shadow
     self.rects = {}
     self:scrollToIndex()
     local rows = self:rows()
-    local first, last = self.first, self.first + rows - 1
+    local firstRow, lastRow = self.first, self.first + rows - 1
     local function text(label, tx, ty, color)
         if self.shadow then
             lg.setColor(shadowColor)
@@ -227,12 +290,14 @@ function Menu:draw(x, y)
         lg.setColor(color)
         lg.print(label, tx, ty)
     end
-    for i = first, math.min(last, #self.items) do
+    for i = (firstRow - 1) * cols + 1, math.min(lastRow * cols, #self.items) do
         local item = self.items[i]
         local label = labelOf(item)
         local selected = i == self.index and self.active
         local enabled = isEnabled(item)
-        local iy = y + (i - first) * self.spacing
+        local row, col = math.floor((i - 1) / cols), (i - 1) % cols
+        local ix = x + col * (width + self.columnGap)
+        local iy = y + (row - firstRow + 1) * self.spacing
         local color = not enabled and self.disabledColor or (selected and self.selectedColor or self.color)
         if self.style == "buttons" then
             local image = theme.image(selected and "buttonActive" or "button")
@@ -241,39 +306,39 @@ function Menu:draw(x, y)
                 local s = width / image:getWidth()
                 bh = image:getHeight() * s
                 lg.setColor(1, 1, 1, enabled and 1 or 0.6)
-                lg.draw(image, math.floor(x), math.floor(iy), 0, s, s)
+                lg.draw(image, math.floor(ix), math.floor(iy), 0, s, s)
             else
                 bh = self.spacing - 8
                 lg.setColor(1, 1, 1, enabled and 1 or 0.7)
-                panel.draw(x, iy, width, bh, selected and "active" or "small")
+                panel.draw(ix, iy, width, bh, selected and "active" or "small")
             end
             local tw = font:getWidth(label)
-            text(label, math.floor(x + (width - tw) / 2), math.floor(iy + (bh - font:getHeight()) / 2 + 1), color)
+            text(label, math.floor(ix + (width - tw) / 2), math.floor(iy + (bh - font:getHeight()) / 2 + 1), color)
             if selected then
                 lg.setColor(1, 1, 1, 1)
-                panel.cursor(x - 4 + bob, iy + bh / 2, theme.cursorScale)
+                panel.cursor(ix - 4 + bob, iy + bh / 2, theme.cursorScale)
             end
-            self.rects[i] = { x, iy, width, bh }
+            self.rects[i] = { ix, iy, width, bh }
         else
             local tw = font:getWidth(label)
-            local tx = self.align == "center" and math.floor(x + (width - tw) / 2) or x
+            local tx = self.align == "center" and math.floor(ix + (width - tw) / 2) or ix
             text(label, tx, iy, color)
             if selected then
                 lg.setColor(1, 1, 1, 1)
-                panel.cursor(tx - 6 + bob, iy + font:getHeight() / 2, theme.cursorScale)
+                panel.cursor(tx - 6 + bob, iy + font:getHeight() / 2, self.cursorScale or theme.cursorScale)
             end
-            self.rects[i] = { x - 30, iy - 4, width + 30, self.spacing }
+            self.rects[i] = { ix - 30, iy - 4, width + 30, self.spacing }
         end
     end
     -- arrows when there is more above / below
-    if rows < #self.items then
+    if rows < self:totalRows() then
         -- on the right edge, like the scroll marks in FF windows
-        local ax = x + width + 16
+        local ax = x + self:getWidth() + 16
         local wob = math.sin(self.time * 6) * 2
-        if first > 1 then
+        if firstRow > 1 then
             panel.arrow(ax, y + 8 - wob, "up", 14, theme.colors.accent)
         end
-        if last < #self.items then
+        if lastRow < self:totalRows() then
             panel.arrow(ax, y + rows * self.spacing - 12 + wob, "down", 14, theme.colors.accent)
         end
     end

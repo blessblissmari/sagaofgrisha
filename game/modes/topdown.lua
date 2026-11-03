@@ -578,6 +578,7 @@ function TopDown:drawHud()
     hud.draw({
         prompt = self.prompt,
         hint = hud.keys({ { "attack", "удар" }, { "throw", "камень" }, { "inventory", "сумка" }, { "pause", "пауза" } }),
+        owner = self,
     })
 end
 

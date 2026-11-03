@@ -117,7 +117,7 @@ function qte.bar(opts)
     q.speed = opts.speed or 1.35
     q.label = opts.label or "Останови в центре!"
     q.action = opts.action or "attack"
-    q.perfect, q.good = 0.05 * timing(), 0.17 * timing()
+    q.perfect, q.good = 0.06 * timing(), 0.2 * timing()
     return q
 end
 

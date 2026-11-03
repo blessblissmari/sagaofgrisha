@@ -69,6 +69,8 @@ function Pause:close()
     if scene.top() == self then
         scene.pop()
     end
+    -- the key hints of the stage show up again for a moment
+    require("game.ui.hud").showHints()
 end
 
 function Pause:update(dt)

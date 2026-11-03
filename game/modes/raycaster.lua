@@ -1163,22 +1163,19 @@ function Raycaster:drawHud()
     local lg = love.graphics
     local st = G().state
     ui.hearts(16, 14, st.hp, st.maxHp, 0.75)
-    -- compass
-    local cw = 120
-    ui.panel.draw(screen.width / 2 - cw / 2, 10, cw, 40, "small")
-    local labels = { [1] = "В", [2] = "Ю", [3] = "З", [4] = "С" }
-    ui.print(COMPASS[self.dir], screen.width / 2, 15, { font = "small", align = "center", color = "accent" })
-    ui.print(labels[(self.dir + 2) % 4 + 1], screen.width / 2 - 44, 15, { font = "small", align = "center", color = "faded" })
-    ui.print(labels[self.dir % 4 + 1], screen.width / 2 + 44, 15, { font = "small", align = "center", color = "faded" })
-    -- minimap
-    local r, cell = 4, 14
-    local size = (r * 2 + 1) * cell
-    local mx, my = screen.width - size - 26, 12
-    ui.panel.draw(mx - 10, my - 8, size + 20, size + 16, "small")
-    self:drawMinimap(mx, my, cell, r, false)
+    -- minimap (north is up: a small "С" over it is the compass)
+    if not self.showMap then
+        local r, cell = 4, 12
+        local size = (r * 2 + 1) * cell
+        local mx, my = screen.width - size - 16, 16
+        lg.setColor(0.02, 0.03, 0.12, 0.55)
+        lg.rectangle("fill", mx - 4, my - 4, size + 8, size + 8, 4, 4)
+        self:drawMinimap(mx, my, cell, r, false)
+        ui.print("С", mx + size / 2, my - 4, { font = "small", align = "center", color = "accent" })
+    end
     -- weapon and hints
     local weapon = G().weapon()
-    if scene.top() == self then
+    if scene.top() == self and not self.showMap then
         local kind, a, b, tex = self:useTarget()
         if kind then
             local label = "Осмотреть"
@@ -1191,10 +1188,13 @@ function Raycaster:drawHud()
             end
             ui.keyHint(screen.width / 2, screen.height - 92, "use", label)
         end
-        ui.print(weapon.name or "", 16, screen.height - 64, { font = "small", color = "accent" })
-        ui.print("[" .. input.keyName("attack") .. "] / мышь — удар   [" .. input.keyName("block") .. "] блок   ["
-            .. input.keyName("map") .. "] карта   [" .. input.keyName("inventory") .. "] сумка",
-            16, screen.height - 36, { font = "small", color = "light", alpha = 0.75 })
+        ui.print(weapon.name or "", 16, screen.height - 36, { font = "small", color = "accent", alpha = 0.8 })
+        local keys = "[" .. input.keyName("attack") .. "] / мышь — удар   [" .. input.keyName("block") .. "] блок   ["
+            .. input.keyName("map") .. "] карта   [" .. input.keyName("inventory") .. "] сумка"
+        local alpha = hud.hintAlpha(keys, self)
+        if alpha > 0 then
+            ui.print(keys, screen.width - 16, screen.height - 36, { font = "small", color = "light", align = "right", alpha = 0.75 * alpha })
+        end
     end
     if self.hitText then
         ui.print(self.hitText.text, screen.width / 2, screen.height / 2 - 60 - (0.7 - self.hitText.t) * 60,

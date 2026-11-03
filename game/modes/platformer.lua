@@ -654,7 +654,7 @@ function Platformer:drawHud()
         table.insert(keys, { "dash", "рывок" })
     end
     table.insert(keys, { "pause", "пауза" })
-    hud.draw({ prompt = self.prompt, hint = hud.keys(keys) })
+    hud.draw({ prompt = self.prompt, hint = hud.keys(keys), owner = self })
 end
 
 function Platformer:drawScriptOverlay()

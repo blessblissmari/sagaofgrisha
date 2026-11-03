@@ -48,7 +48,7 @@ function screen.getCanvas()
 end
 
 function screen.begin()
-    love.graphics.setCanvas(canvas)
+    love.graphics.setCanvas({ canvas, stencil = true })
     love.graphics.clear(0, 0, 0, 1)
     love.graphics.origin()
 end
