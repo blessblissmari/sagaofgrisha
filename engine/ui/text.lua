@@ -1,69 +1,111 @@
--- Text with colors, word wrap and a typewriter effect.
+-- Rich text: colors, effects, word wrap, typewriter, pauses and events.
 --
---   local t = Text("Привет, {accent}Гриша{/}! Как дела?", { width = 600 })
+--   local t = Text("Привет, {accent}Гриша{/}! {wave}Ура!{/}", { width = 600, speed = 45 })
 --   t:update(dt)     -- reveals letters (speed = letters per second, 0 = all at once)
 --   t:skip()         -- show everything now
 --   t:isDone()
 --   t:draw(x, y)
 --
--- Markup: {name}...{/} where name is a color from the theme (accent, red,
--- gold...) or a hex color {#ff8800}. Russian text is fine: everything is UTF-8.
+-- Markup (UTF-8, Russian is fine):
+--   {accent} {gold} {red} ...  a color of the theme      {#ff8800}  any color
+--   {wave}    letters wave         {shake}  letters tremble (fear, anger)
+--   {rainbow} shimmering colors    {slow} {fast} {speed=12}  typing speed
+--   {/}       closes the last tag  {p} pause 0.5 s   {p=1.5} pause 1.5 s
+--   {@hop} {@shake} {@emote=anger} {@sound=coin} ...  events: when the typewriter
+--             reaches them the dialogue tells the game (emotions of characters)
 
 local class = require("engine.class")
 local theme = require("engine.ui.theme")
 local util = require("engine.util")
+local utf8 = require("utf8")
 
 local Text = class()
 
-local PAUSES = { ["."] = 0.25, ["!"] = 0.25, ["?"] = 0.25, [","] = 0.1, [":"] = 0.12, [";"] = 0.12 }
+local PAUSES = { ["."] = 0.25, ["!"] = 0.25, ["?"] = 0.25, [","] = 0.1, [":"] = 0.12, [";"] = 0.12, ["…"] = 0.35 }
 
+local function newStyle(base, changes)
+    local s = {}
+    for k, v in pairs(base) do
+        s[k] = v
+    end
+    for k, v in pairs(changes) do
+        s[k] = v
+    end
+    return s
+end
+
+-- returns tokens: { text = "...", style = {...} } or { event = name, value = v }
 local function parse(str, defaultColor)
-    local segments = {}
-    local stack = { defaultColor }
+    local tokens = {}
+    local stack = { { color = defaultColor, speed = 1 } }
     local pos = 1
     while pos <= #str do
         local s, e, tag = str:find("{([^{}]*)}", pos)
         if not s then
-            table.insert(segments, { text = str:sub(pos), color = stack[#stack] })
+            table.insert(tokens, { text = str:sub(pos), style = stack[#stack] })
             break
         end
         if s > pos then
-            table.insert(segments, { text = str:sub(pos, s - 1), color = stack[#stack] })
+            table.insert(tokens, { text = str:sub(pos, s - 1), style = stack[#stack] })
         end
-        if tag == "/" then
+        local top = stack[#stack]
+        local name, value = tag:match("^([^=]+)=(.*)$")
+        name = name or tag
+        if name:sub(1, 1) == "/" then
             if #stack > 1 then
                 table.remove(stack)
             end
-        elseif tag:sub(1, 1) == "#" then
-            table.insert(stack, util.hexColor(tag))
+        elseif name:sub(1, 1) == "@" then
+            table.insert(tokens, { event = name:sub(2), value = value })
+        elseif name == "p" or name == "pause" then
+            table.insert(tokens, { event = "pause", value = tonumber(value) or 0.5 })
+        elseif name:sub(1, 1) == "#" then
+            table.insert(stack, newStyle(top, { color = util.hexColor(name) }))
+        elseif name == "wave" or name == "shake" or name == "rainbow" then
+            table.insert(stack, newStyle(top, { [name] = true }))
+        elseif name == "slow" then
+            table.insert(stack, newStyle(top, { speed = 0.35 }))
+        elseif name == "fast" then
+            table.insert(stack, newStyle(top, { speed = 2.5 }))
+        elseif name == "speed" then
+            table.insert(stack, newStyle(top, { speed = (tonumber(value) or 45) / math.max(theme.textSpeed, 1) }))
+        elseif theme.colors[name] then
+            table.insert(stack, newStyle(top, { color = theme.colors[name] }))
         else
-            table.insert(stack, theme.colors[tag] or stack[#stack])
+            -- unknown tag: keep it as text
+            table.insert(tokens, { text = "{" .. tag .. "}", style = top })
         end
         pos = e + 1
     end
-    return segments
+    return tokens
 end
 
--- opts: font, width, color, speed, lineHeight (multiplier), align, onChar(char)
+-- opts: font, width, color, speed, lineHeight (multiplier), align, onChar(char), onEvent(name, value), shadow
 function Text:init(str, opts)
     opts = opts or {}
     self.font = opts.font or theme.font("body")
     self.width = opts.width or 400
     self.color = opts.color or theme.colors.ink
     self.speed = opts.speed or 0
-    self.lineHeight = math.floor(self.font:getHeight() * (opts.lineHeight or 1.1))
+    self.lineHeight = math.floor(self.font:getHeight() * (opts.lineHeight or 1.05))
     self.align = opts.align or "left"
     self.onChar = opts.onChar
+    self.onEvent = opts.onEvent
+    self.shadow = opts.shadow
+    self.time = 0
     self:set(str or "")
 end
 
 function Text:set(str)
     self.source = str
     self.lines = {}
+    self.chars = {}   -- every visible letter: { c = "а", speed = 1 }
+    self.events = {}  -- events[k] = list, fired when k letters are shown
     self.total = 0
     self.shown = self.speed > 0 and 0 or math.huge
     self.timer = 0
     self.delay = 0
+    self.fired = -1
     local font = self.font
     local line = { runs = {}, width = 0 }
     table.insert(self.lines, line)
@@ -72,45 +114,54 @@ function Text:set(str)
         line = { runs = {}, width = 0 }
         table.insert(self.lines, line)
     end
-    for _, seg in ipairs(parse(str, self.color)) do
-        local text = seg.text
-        local i = 1
-        while i <= #text do
-            local c = text:sub(i, i)
-            if c == "\n" then
-                newLine()
-                i = i + 1
-            elseif c == " " then
-                if #line.runs > 0 then
-                    table.insert(line.runs, { text = " ", color = seg.color, x = line.width, count = 1, space = true })
-                    line.width = line.width + spaceWidth
-                end
-                i = i + 1
-            else
-                local s, e = text:find("[^ \n]+", i)
-                local word = text:sub(s, e)
-                local w = font:getWidth(word)
-                if line.width + w > self.width and #line.runs > 0 then
-                    -- remove the trailing space before wrapping
-                    local last = line.runs[#line.runs]
-                    if last.space then
-                        table.remove(line.runs)
-                        line.width = line.width - spaceWidth
-                    end
+    local function addChars(text, style)
+        for _, c in utf8.codes(text) do
+            table.insert(self.chars, { c = utf8.char(c), speed = style.speed or 1 })
+        end
+    end
+    for _, token in ipairs(parse(str, self.color)) do
+        if token.event then
+            local k = #self.chars
+            self.events[k] = self.events[k] or {}
+            table.insert(self.events[k], token)
+        else
+            local text, style = token.text, token.style
+            local i = 1
+            while i <= #text do
+                local c = text:sub(i, i)
+                if c == "\n" then
                     newLine()
+                    i = i + 1
+                elseif c == " " then
+                    if #line.runs > 0 then
+                        table.insert(line.runs, { text = " ", style = style, x = line.width, count = 1, space = true })
+                        line.width = line.width + spaceWidth
+                        addChars(" ", style)
+                    end
+                    i = i + 1
+                else
+                    local s, e = text:find("[^ \n]+", i)
+                    local word = text:sub(s, e)
+                    local w = font:getWidth(word)
+                    if line.width + w > self.width and #line.runs > 0 then
+                        local last = line.runs[#line.runs]
+                        if last.space then
+                            table.remove(line.runs)
+                            line.width = line.width - spaceWidth
+                            table.remove(self.chars)
+                        end
+                        newLine()
+                    end
+                    local count = util.ulen(word)
+                    table.insert(line.runs, { text = word, style = style, x = line.width, count = count })
+                    line.width = line.width + w
+                    addChars(word, style)
+                    i = e + 1
                 end
-                local count = util.ulen(word)
-                table.insert(line.runs, { text = word, color = seg.color, x = line.width, count = count })
-                line.width = line.width + w
-                i = e + 1
             end
         end
     end
-    for _, l in ipairs(self.lines) do
-        for _, run in ipairs(l.runs) do
-            self.total = self.total + run.count
-        end
-    end
+    self.total = #self.chars
 end
 
 function Text:getHeight()
@@ -126,56 +177,101 @@ function Text:getWidth()
 end
 
 function Text:isDone()
-    return self.shown >= self.total
+    return self.shown >= self.total and self.delay <= 0
+end
+
+local function fire(self, k, skipping)
+    local list = self.events[k]
+    if not list then
+        return
+    end
+    for _, e in ipairs(list) do
+        if e.event == "pause" then
+            if not skipping then
+                self.delay = self.delay + e.value
+            end
+        elseif self.onEvent then
+            self.onEvent(e.event, e.value)
+        end
+    end
 end
 
 function Text:skip()
+    for k = math.max(self.fired + 1, 0), self.total do
+        fire(self, k, true)
+    end
+    self.fired = self.total
     self.shown = math.huge
+    self.delay = 0
 end
 
 -- the n-th visible letter (for pauses and sounds)
 function Text:charAt(n)
-    for _, l in ipairs(self.lines) do
-        for _, run in ipairs(l.runs) do
-            if n <= run.count then
-                return util.usub(run.text, n, n)
-            end
-            n = n - run.count
-        end
-    end
-    return ""
+    local c = self.chars[n]
+    return c and c.c or ""
 end
 
 function Text:update(dt)
-    if self:isDone() then
+    self.time = self.time + dt
+    if self.shown >= self.total and self.delay <= 0 then
         return
+    end
+    if self.fired < 0 then
+        self.fired = 0
+        fire(self, 0)
     end
     if self.delay > 0 then
         self.delay = self.delay - dt
         return
     end
-    self.timer = self.timer + dt * self.speed
-    while self.timer >= 1 and not self:isDone() do
+    local nextChar = self.chars[self.shown + 1]
+    self.timer = self.timer + dt * self.speed * (nextChar and nextChar.speed or 1)
+    while self.timer >= 1 and self.shown < self.total do
         self.timer = self.timer - 1
         self.shown = self.shown + 1
-        local c = self:charAt(self.shown)
+        local c = self.chars[self.shown].c
         if self.onChar and c ~= " " then
             self.onChar(c, self.shown)
         end
-        if PAUSES[c] and self.shown < self.total then
-            self.delay = PAUSES[c]
+        self.fired = self.shown
+        fire(self, self.shown)
+        local after = self.chars[self.shown + 1]
+        if PAUSES[c] and self.shown < self.total and (not after or after.c == " ") then
+            self.delay = self.delay + PAUSES[c] / math.max(self.chars[self.shown].speed, 0.5)
+        end
+        if self.delay > 0 then
             self.timer = 0
             break
         end
     end
 end
 
--- opts: alpha, shadow (color of a 1px shadow)
+local function hsv(h)
+    local i = math.floor(h * 6) % 6
+    local f = h * 6 - math.floor(h * 6)
+    local q, t = 1 - f, f
+    local list = { { 1, t, 0 }, { q, 1, 0 }, { 0, 1, t }, { 0, q, 1 }, { t, 0, 1 }, { 1, 0, q } }
+    local c = list[i + 1]
+    return 0.55 + c[1] * 0.45, 0.55 + c[2] * 0.45, 0.55 + c[3] * 0.45
+end
+
+-- opts: alpha, shadow (color, or false to turn it off)
 function Text:draw(x, y, opts)
     opts = opts or {}
+    local lg = love.graphics
     local alpha = opts.alpha or 1
-    love.graphics.setFont(self.font)
+    local font = self.font
+    lg.setFont(font)
+    local shadow = opts.shadow
+    if shadow == nil then
+        shadow = self.shadow
+    end
+    if shadow == nil and theme.textShadow then
+        shadow = theme.colors.shadow
+    end
+    local px = theme.pixelOf(font)
     local left = self.shown
+    local index = 0
     for i, l in ipairs(self.lines) do
         local lx = x
         if self.align == "center" then
@@ -186,23 +282,55 @@ function Text:draw(x, y, opts)
         local ly = y + (i - 1) * self.lineHeight
         for _, run in ipairs(l.runs) do
             if left <= 0 then
+                lg.setColor(1, 1, 1, 1)
                 return
             end
             local text = run.text
-            if left < run.count then
-                text = util.usub(text, 1, left)
+            local count = math.min(left, run.count)
+            if count < run.count then
+                text = util.usub(text, 1, count)
             end
             left = left - run.count
-            if opts.shadow then
-                love.graphics.setColor(opts.shadow[1], opts.shadow[2], opts.shadow[3], (opts.shadow[4] or 1) * alpha)
-                love.graphics.print(text, math.floor(lx + run.x) + 2, ly + 2)
+            local st = run.style
+            local c = st.color
+            if st.wave or st.shake or st.rainbow then
+                local cx = math.floor(lx + run.x)
+                for _, code in utf8.codes(text) do
+                    local ch = utf8.char(code)
+                    index = index + 1
+                    local dx, dy = 0, 0
+                    if st.wave then
+                        dy = math.floor(math.sin(self.time * 8 - index * 0.7) * px * 1.5 + 0.5)
+                    end
+                    if st.shake then
+                        dx = love.math.random(-1, 1) * px * 0.5
+                        dy = dy + love.math.random(-1, 1) * px * 0.5
+                    end
+                    if shadow then
+                        lg.setColor(shadow[1], shadow[2], shadow[3], (shadow[4] or 1) * alpha)
+                        lg.print(ch, math.floor(cx + dx + px), math.floor(ly + dy + px))
+                    end
+                    if st.rainbow then
+                        local r, g, b = hsv((self.time * 0.6 + index * 0.08) % 1)
+                        lg.setColor(r, g, b, alpha)
+                    else
+                        lg.setColor(c[1], c[2], c[3], (c[4] or 1) * alpha)
+                    end
+                    lg.print(ch, math.floor(cx + dx), math.floor(ly + dy))
+                    cx = cx + font:getWidth(ch)
+                end
+            else
+                index = index + count
+                if shadow then
+                    lg.setColor(shadow[1], shadow[2], shadow[3], (shadow[4] or 1) * alpha)
+                    lg.print(text, math.floor(lx + run.x) + px, ly + px)
+                end
+                lg.setColor(c[1], c[2], c[3], (c[4] or 1) * alpha)
+                lg.print(text, math.floor(lx + run.x), ly)
             end
-            local c = run.color
-            love.graphics.setColor(c[1], c[2], c[3], (c[4] or 1) * alpha)
-            love.graphics.print(text, math.floor(lx + run.x), ly)
         end
     end
-    love.graphics.setColor(1, 1, 1, 1)
+    lg.setColor(1, 1, 1, 1)
 end
 
 return Text

@@ -17,6 +17,7 @@
 local audio = require("engine.audio")
 local class = require("engine.class")
 local input = require("engine.input")
+local panel = require("engine.ui.panel")
 local theme = require("engine.ui.theme")
 local util = require("engine.util")
 
@@ -42,12 +43,16 @@ function Menu:init(items, opts)
     self.font = opts.font or theme.font("body")
     self.align = opts.align or "left"
     self.style = opts.style or "plain"
-    self.spacing = opts.spacing or (self.style == "buttons" and 54 or math.floor(self.font:getHeight() * 1.4))
+    self.spacing = opts.spacing or (self.style == "buttons" and math.max(54, self.font:getHeight() + 22)
+        or math.floor(self.font:getHeight() * (theme.menuSpacing or 1.15)))
     self.width = opts.width
     self.color = opts.color or theme.colors.ink
     self.selectedColor = opts.selectedColor or theme.colors.accent
     self.disabledColor = opts.disabledColor or theme.colors.faded
     self.shadow = opts.shadow
+    if self.shadow == nil and theme.textShadow then
+        self.shadow = true
+    end
     self.cancel = opts.cancel
     self.onMove = opts.onMove
     self.time = 0
@@ -181,9 +186,18 @@ function Menu:draw(x, y)
     local font = self.font
     lg.setFont(font)
     local width = self:getWidth()
-    local cursor = theme.image("cursor")
-    local bob = math.floor(math.sin(self.time * 7) * 2 + 0.5)
+    local bob = math.floor(math.abs(math.sin(self.time * 5)) * 4 + 0.5)
+    local px = theme.pixelOf(font)
+    local shadowColor = theme.colors.shadow
     self.rects = {}
+    local function text(label, tx, ty, color)
+        if self.shadow then
+            lg.setColor(shadowColor)
+            lg.print(label, tx + px, ty + px)
+        end
+        lg.setColor(color)
+        lg.print(label, tx, ty)
+    end
     for i, item in ipairs(self.items) do
         local label = labelOf(item)
         local selected = i == self.index and self.active
@@ -192,31 +206,31 @@ function Menu:draw(x, y)
         local color = not enabled and self.disabledColor or (selected and self.selectedColor or self.color)
         if self.style == "buttons" then
             local image = theme.image(selected and "buttonActive" or "button")
-            local s = width / image:getWidth()
-            local bh = image:getHeight() * s
-            lg.setColor(1, 1, 1, enabled and 1 or 0.6)
-            lg.draw(image, math.floor(x), math.floor(iy), 0, s, s)
+            local bh
+            if image then
+                local s = width / image:getWidth()
+                bh = image:getHeight() * s
+                lg.setColor(1, 1, 1, enabled and 1 or 0.6)
+                lg.draw(image, math.floor(x), math.floor(iy), 0, s, s)
+            else
+                bh = self.spacing - 8
+                lg.setColor(1, 1, 1, enabled and 1 or 0.7)
+                panel.draw(x, iy, width, bh, selected and "active" or "small")
+            end
             local tw = font:getWidth(label)
-            lg.setColor(color)
-            lg.print(label, math.floor(x + (width - tw) / 2), math.floor(iy + (bh - font:getHeight()) / 2 + 1))
+            text(label, math.floor(x + (width - tw) / 2), math.floor(iy + (bh - font:getHeight()) / 2 + 1), color)
             if selected then
                 lg.setColor(1, 1, 1, 1)
-                lg.draw(cursor, math.floor(x - 30 + bob), math.floor(iy + (bh - 28 * 0.8) / 2), 0, 0.8, 0.8)
+                panel.cursor(x - 4 + bob, iy + bh / 2, theme.cursorScale)
             end
             self.rects[i] = { x, iy, width, bh }
         else
             local tw = font:getWidth(label)
             local tx = self.align == "center" and math.floor(x + (width - tw) / 2) or x
-            if self.shadow then
-                lg.setColor(0, 0, 0, 0.6)
-                lg.print(label, tx + 2, iy + 2)
-            end
-            lg.setColor(color)
-            lg.print(label, tx, iy)
+            text(label, tx, iy, color)
             if selected then
                 lg.setColor(1, 1, 1, 1)
-                local cs = 0.75
-                lg.draw(cursor, tx - 30 + bob, math.floor(iy + (font:getHeight() - 28 * cs) / 2), 0, cs, cs)
+                panel.cursor(tx - 6 + bob, iy + font:getHeight() / 2, theme.cursorScale)
             end
             self.rects[i] = { x - 30, iy - 4, width + 30, self.spacing }
         end

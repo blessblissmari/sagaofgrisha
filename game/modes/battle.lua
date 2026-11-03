@@ -76,9 +76,13 @@ function Battle:init(def)
     local n = #members
     for i, m in ipairs(members) do
         local s = m.stats
+        -- the hero's weapon and armor from the bag count here too
+        local worn = m.id == "hero"
         local u = newUnit({
             id = m.id, name = m.name, side = "party", hp = math.max(1, s.hp), maxHp = s.maxHp or s.hp,
-            attack = s.attack, defense = s.defense, speed = s.speed, skills = m.skills,
+            attack = s.attack + (worn and g.bonus("attack") or 0),
+            defense = s.defense + (worn and g.bonus("defense") or 0),
+            speed = s.speed + (worn and g.bonus("speed") or 0), skills = m.skills,
             x = 150 + (i % 2) * 30, y = (i - (n + 1) / 2) * 80, spriteDef = m.spriteDef, back = m.back,
             scale = m.scale, stats = s,
         })
@@ -853,7 +857,12 @@ function Battle:draw()
         local sx, sy, s = self:project(u.x, u.y, 0)
         local arrow = ui.theme.image("next")
         lg.setColor(1, 1, 1, 1)
-        lg.draw(arrow, math.floor(sx - 14), math.floor(sy - 80 * s - 30 + math.sin(self.clock * 8) * 4))
+        local bob = math.sin(self.clock * 8) * 4
+        if arrow then
+            lg.draw(arrow, math.floor(sx - 14), math.floor(sy - 80 * s - 30 + bob))
+        else
+            ui.panel.arrow(sx, sy - 80 * s - 14 + bob, "down", 20, ui.theme.colors.gold)
+        end
     end
     self.fx:draw()
     lg.pop()
@@ -864,24 +873,25 @@ function Battle:drawHud()
     local lg = love.graphics
     local W, H = screen.width, screen.height
     -- party panel
-    local pw, ph = 400, 34 + #self.party * 34
+    local rowH = math.max(34, ui.font("body"):getHeight())
+    local pw, ph = 440, 28 + #self.party * rowH
     local px, py = W - pw - 16, H - ph - 14
     ui.panel.draw(px, py, pw, ph)
     for i, u in ipairs(self.party) do
-        local y = py + 14 + (i - 1) * 34
+        local y = py + 14 + (i - 1) * rowH
         local color = u.hp <= 0 and "faded" or (self.active == u and "accent" or "ink")
         ui.print(u.name, px + 22, y, { font = "body", color = color })
-        ui.bar(px + 170, y + 8, 140, 12, u.hp, u.maxHp, u.hp / u.maxHp < 0.3 and "red" or "green")
-        ui.print(u.hp .. "/" .. u.maxHp, px + 380, y, { font = "small", align = "right", color = color })
+        ui.bar(px + 190, y + rowH / 2 - 6, 130, 12, u.hp, u.maxHp, u.hp / u.maxHp < 0.3 and "red" or "green")
+        ui.print(u.hp .. "/" .. u.maxHp, px + pw - 20, y + 8, { font = "small", align = "right", color = color })
     end
     -- command menu
     if self.menu then
-        local mw = math.max(200, self.menu:getWidth() + 80)
-        local mh = self.menu:getHeight() + 60
+        local mw = math.max(220, self.menu:getWidth() + 90)
+        local mh = self.menu:getHeight() + 64
         local mx, my = 16, H - mh - 14
         ui.panel.draw(mx, my, mw, mh)
-        ui.print(self.menuCaption or "", mx + 22, my + 12, { font = "small", color = "accent" })
-        self.menu:draw(mx + 50, my + 38)
+        ui.print(self.menuCaption or "", mx + 22, my + 10, { font = "small", color = "accent" })
+        self.menu:draw(mx + 56, my + 40)
         local sel = self.menu:selected()
         if sel and sel.skill and sel.skill.description then
             ui.print(sel.skill.description, mx + mw + 12, H - 40, { font = "small", color = "light", shadow = true })
@@ -891,14 +901,14 @@ function Battle:drawHud()
     if self.log then
         local font = ui.font("body")
         local w = font:getWidth(self.log) + 50
-        ui.panel.draw((W - w) / 2, 16, w, 46)
-        ui.print(self.log, W / 2, 26, { font = font, align = "center" })
+        ui.panel.draw((W - w) / 2, 14, w, font:getHeight() + 16)
+        ui.print(self.log, W / 2, 22, { font = font, align = "center" })
     end
     if self.banner then
         ui.banner(self.banner, W / 2, 180, 420, { font = "title" })
     end
     local hint = self.view == "behind" and "" or ("[" .. input.keyName("view") .. "] вид   [" .. input.keyName("camLeft") .. "/" .. input.keyName("camRight") .. "] поворот")
-    ui.print(hint, 16, 72, { font = "small", color = "light", shadow = true, alpha = 0.75 })
+    ui.print(hint, 16, 80, { font = "small", color = "light", shadow = true, alpha = 0.75 })
     if self.ring then
         ui.print("Жми [" .. input.keyName("attack") .. "], когда круг сойдётся!", W / 2, 70, { font = "small", align = "center", color = "gold", shadow = true })
     end

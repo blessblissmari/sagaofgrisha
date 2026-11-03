@@ -28,6 +28,7 @@ local game = {
         name = "Hero", hp = 6, maxHp = 6, slots = 24,
         sprite = "grisha", side = "hero_side",
         items = {}, party = {}, abilities = {},
+        equipment = {}, -- { weapon = "sword", body = "tunic" }: put on at the start
         battle = { hp = 34, attack = 7, defense = 2, speed = 5,
             skills = { "attack", "stone", "defend", "item", "flee" } },
         unit = "heroes",
@@ -44,6 +45,8 @@ local game = {
     sounds = require("game.data.sounds"),
     surfaces = require("game.data.surfaces"),
     effects = require("game.data.effects"),
+    notes = {},  -- texts of letters / notes: items with read = "name" show game.notes[name]
+    voices = {}, -- extra voices for characters (see engine/voice.lua)
     -- stage kind -> module with the gameplay
     modes = {
         title = "game.modes.title", novel = "game.modes.novel", topdown = "game.modes.topdown",
@@ -130,8 +133,8 @@ function game.speaker(who)
     local s = speakers[who]
     if not s or s.source ~= c then
         s = {
-            source = c, id = who, name = c.name or who, voice = c.voice,
-            color = type(c.color) == "string" and { util.hexColor(c.color) } or c.color,
+            source = c, id = who, name = c.name or who, voice = c.voice, speed = c.speed,
+            color = type(c.color) == "string" and util.hexColor(c.color) or c.color,
             portrait = game.resolvePicture(c.portrait),
             figure = game.resolvePicture(c.figure or c.portrait),
         }
@@ -151,7 +154,7 @@ function game.newGame()
         hp = p.hp, maxHp = p.maxHp or p.hp,
         inventory = Inventory(game.items, p.slots or 24),
         flags = {}, counters = {}, abilities = {}, party = {}, pets = {},
-        collected = {}, defeated = {},
+        collected = {}, defeated = {}, equipment = {}, quests = {},
         hero = util.deepCopy(p.battle),
     }
     st.hero.maxHp = st.hero.hp
@@ -165,7 +168,101 @@ function game.newGame()
     for _, id in ipairs(p.party or {}) do
         game.addPet(id)
     end
+    for _, id in pairs(p.equipment or {}) do
+        game.equip(id)
+    end
+    -- an equipped thing that leaves the bag is taken off
+    st.inventory.onChange = function(id, delta)
+        if delta < 0 and not st.inventory:has(id) then
+            for slot, eq in pairs(st.equipment) do
+                if eq == id then
+                    st.equipment[slot] = nil
+                end
+            end
+        end
+    end
     return st
+end
+
+-- equipment -------------------------------------------------------------------------
+-- items.lua: kind = "weapon" | "armor" | "item" | "key"; slot = "weapon" | "body" |
+-- "head" | "feet" | "accessory"; bonuses: attack, defense, speed
+
+game.equipSlots = { "weapon", "body", "head", "feet", "accessory" }
+game.slotNames = { weapon = "Оружие", body = "Тело", head = "Голова", feet = "Ноги", accessory = "Аксессуар" }
+game.kinds = {
+    { id = "item", name = "Предметы" }, { id = "weapon", name = "Оружие" },
+    { id = "armor", name = "Броня" }, { id = "key", name = "Ценное" },
+}
+
+function game.itemKind(id)
+    local info = game.items[id] or {}
+    if info.kind then
+        return info.kind
+    elseif info.slot == "weapon" then
+        return "weapon"
+    elseif info.slot then
+        return "armor"
+    elseif info.quest then
+        return "key"
+    end
+    return "item"
+end
+
+function game.slotOf(id)
+    local info = game.items[id] or {}
+    return info.slot or (game.itemKind(id) == "weapon" and "weapon" or (game.itemKind(id) == "armor" and "body" or nil))
+end
+
+-- puts on a weapon / armor from the bag (adds it to the bag if needed)
+function game.equip(id)
+    local st = game.state
+    local slot = game.slotOf(id)
+    if not slot then
+        return false
+    end
+    if not st.inventory:has(id) then
+        st.inventory:add(id, 1)
+    end
+    st.equipment[slot] = id
+    return true
+end
+
+function game.unequip(slot)
+    game.state.equipment[slot] = nil
+end
+
+function game.equipped(slot)
+    local id = game.state and game.state.equipment[slot]
+    return id, id and game.items[id]
+end
+
+function game.isEquipped(id)
+    for _, eq in pairs(game.state.equipment) do
+        if eq == id then
+            return true
+        end
+    end
+    return false
+end
+
+-- the weapon in hand (or bare fists: game.items.fists)
+function game.weapon()
+    local id, info = game.equipped("weapon")
+    if info then
+        return info, id
+    end
+    return game.items.fists or { name = "Кулаки", icon = "fist", attack = 0 }, "fists"
+end
+
+-- sum of a bonus over everything worn: game.bonus("attack")
+function game.bonus(stat)
+    local total = 0
+    for _, id in pairs(game.state and game.state.equipment or {}) do
+        local info = game.items[id]
+        total = total + (info and tonumber(info[stat]) or 0)
+    end
+    return total
 end
 
 function game.addPet(id)
@@ -252,7 +349,7 @@ function game.save()
         hp = st.hp, maxHp = st.maxHp, inventory = st.inventory:serialize(),
         flags = st.flags, counters = st.counters, abilities = st.abilities,
         party = st.party, pets = st.pets, collected = st.collected, defeated = st.defeated,
-        hero = st.hero,
+        hero = st.hero, equipment = st.equipment, quests = st.quests,
     }
     save.write("savegame", data)
 end
@@ -272,8 +369,13 @@ function game.load()
             st[k] = v
         end
     end
+    st.equipment = data.equipment or {}
+    st.quests = data.quests or {}
+    local onChange = st.inventory.onChange
+    st.inventory.onChange = nil
     st.inventory:clear()
     st.inventory:deserialize(data.inventory or {})
+    st.inventory.onChange = onChange
     game.go(data.stage, { spawn = data.spawn })
     return true
 end
@@ -480,6 +582,11 @@ function game.boot(config)
     config.sounds = game.sounds
     config.characters = {}
     config.effects = game.effects
+    -- the look of the UI: game.ui = "ff" | "parchment" | { preset = "ff", ... }
+    engine.ui.theme.use(game.ui or "ff")
+    for name, preset in pairs(game.voices or {}) do
+        engine.voice.add(name, preset)
+    end
     engine.load(config)
     game.loadSettings()
     love.window.setTitle(game.title)

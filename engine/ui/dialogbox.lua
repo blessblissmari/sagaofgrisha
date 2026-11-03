@@ -1,15 +1,18 @@
--- The dialogue window: parchment box, name plate, portrait, typewriter text,
--- "next" arrow and answer choices. Used by in-game dialogues and the novel.
+-- The dialogue window: window, name plate, portrait, typewriter text with
+-- effects, a synthesized voice, the "next" marker and answer choices.
+-- Used by in-game dialogues and the visual novel.
 --
---   box:say(speaker, { "page 1", "page 2" })   -- speaker = { name, color, voice, portrait }
+--   box:say(speaker, { "page 1", "page 2" })   -- speaker = { id, name, color, voice, portrait }
 --   box:ask(speaker, "Вопрос?", { "Да", "Нет" })
 --   local event, value = box:update(dt)       -- "done" | "choice", index
 --   box:draw()
+--   box.onEvent = function(speaker, name, value) end   -- {@hop}, {@emote=...} in the text
 
 local audio = require("engine.audio")
 local class = require("engine.class")
 local input = require("engine.input")
 local screen = require("engine.screen")
+local voice = require("engine.voice")
 local Menu = require("engine.ui.menu")
 local panel = require("engine.ui.panel")
 local Text = require("engine.ui.text")
@@ -17,14 +20,18 @@ local theme = require("engine.ui.theme")
 
 local DialogBox = class()
 
--- opts: x, y, w, h, choiceStyle ("panel" / "buttons")
+-- opts: x, y, w, h, choiceStyle ("panel" / "buttons" / "window"), position ("bottom" / "top")
 function DialogBox:init(opts)
     opts = opts or {}
     self.w = opts.w or (screen.width - 80)
-    self.h = opts.h or 150
+    self.h = opts.h or (theme.textShadow and 176 or 150)
     self.x = opts.x or math.floor((screen.width - self.w) / 2)
+    self.position = opts.position or "bottom"
     self.y = opts.y or (screen.height - self.h - 20)
     self.choiceStyle = opts.choiceStyle or "panel"
+    if theme.choiceStyle == "window" then
+        self.choiceStyle = "window"
+    end
     self.state = "hidden"
     self.time = 0
     self.appear = 0
@@ -33,28 +40,44 @@ end
 
 local function blip(speaker)
     local count = 0
+    local v = speaker and speaker.voice or theme.narratorVoice
     return function(c)
         count = count + 1
-        if count % 2 == 1 and theme.sounds.text then
-            audio.play(theme.sounds.text, { pitch = speaker and speaker.voice or 1, volume = 0.35 })
+        if type(v) == "string" or type(v) == "table" then
+            voice.say(v, c, count)
+        elseif count % 2 == 1 and theme.sounds.text then
+            audio.play(theme.sounds.text, { pitch = v or 1, volume = 0.35 })
         end
     end
 end
 
 function DialogBox:textLeft()
-    return (self.speaker and self.speaker.portrait) and 156 or 30
+    return (self.speaker and self.speaker.portrait) and 162 or 34
 end
 
 function DialogBox:makeText(str)
     local left = self:textLeft()
     return Text(str, {
+        font = theme.font("dialog"),
         width = self.w - left - 50,
-        speed = self.fast and 0 or theme.textSpeed,
+        speed = self.fast and 0 or (self.speaker and self.speaker.speed or theme.textSpeed),
         onChar = blip(self.speaker),
+        onEvent = function(name, value)
+            if self.onEvent then
+                self.onEvent(self.speaker, name, value)
+            end
+        end,
     })
 end
 
+function DialogBox:open()
+    if self.state == "hidden" then
+        self.appear = 0
+    end
+end
+
 function DialogBox:say(speaker, pages)
+    self:open()
     self.speaker = speaker
     self.pages = type(pages) == "table" and pages or { pages }
     self.page = 1
@@ -64,6 +87,7 @@ function DialogBox:say(speaker, pages)
 end
 
 function DialogBox:ask(speaker, prompt, options)
+    self:open()
     self.speaker = speaker
     self.text = prompt and self:makeText(prompt) or nil
     local items = {}
@@ -73,6 +97,7 @@ function DialogBox:ask(speaker, prompt, options)
     self.menu = Menu(items, {
         style = self.choiceStyle == "buttons" and "buttons" or "plain",
         width = self.choiceStyle == "buttons" and 340 or nil,
+        font = theme.font("dialog"),
     })
     self.state = "choice"
 end
@@ -91,7 +116,10 @@ end
 
 function DialogBox:update(dt)
     self.time = self.time + dt
-    self.appear = math.min(1, self.appear + dt * 6)
+    self.appear = math.min(1, self.appear + dt * 7)
+    if self.appear < 1 then
+        return nil
+    end
     if self.state == "text" then
         self.text:update(dt)
         if confirmPressed() or (self.fast and self.text:isDone()) then
@@ -126,21 +154,35 @@ function DialogBox:update(dt)
     return nil
 end
 
-function DialogBox:drawChoices()
+-- height of the window: grows when answers are inside it
+function DialogBox:boxHeight()
+    if self.state == "choice" and self.choiceStyle == "window" and self.menu then
+        local textH = self.text and self.text:getHeight() or 0
+        return math.max(self.h, 28 + textH + self.menu:getHeight() + 22)
+    end
+    return self.h
+end
+
+function DialogBox:drawChoices(x, y, h)
     local menu = self.menu
+    if self.choiceStyle == "window" then
+        local textH = self.text and self.text:getHeight() or 0
+        menu:draw(x + self:textLeft() + 44, y + 24 + textH + 4)
+        return
+    end
     if self.choiceStyle == "buttons" then
         local w = menu:getWidth()
-        local x = math.floor((screen.width - w) / 2)
-        local y = math.floor(self.y - 30 - menu:getHeight())
-        menu:draw(x, y)
+        local mx = math.floor((screen.width - w) / 2)
+        local my = math.floor(y - 30 - menu:getHeight())
+        menu:draw(mx, my)
         return
     end
     local w = menu:getWidth() + 76
-    local h = menu:getHeight() + 26
-    local x = self.x + self.w - w - 24
-    local y = self.y - h - 8
-    panel.draw(x, y, w, h)
-    menu:draw(x + 46, y + 16)
+    local mh = menu:getHeight() + 26
+    local mx = self.x + self.w - w - 24
+    local my = y - mh - 8
+    panel.draw(mx, my, w, mh)
+    menu:draw(mx + 46, my + 16)
 end
 
 function DialogBox:draw()
@@ -148,37 +190,60 @@ function DialogBox:draw()
         return
     end
     local lg = love.graphics
-    local x, y, w, h = self.x, self.y + math.floor((1 - self.appear) * 20), self.w, self.h
+    local w, h = self.w, self:boxHeight()
+    local x = self.x
+    local y = self.position == "top" and 20 or (screen.height - h - 20)
+    if self.appear < 1 then
+        -- the window opens from its middle line, like in old RPGs
+        local k = 0.15 + 0.85 * self.appear
+        local hh = math.floor(h * k)
+        lg.setColor(1, 1, 1, 0.6 + 0.4 * self.appear)
+        panel.draw(x, y + (h - hh) / 2, w, hh)
+        lg.setColor(1, 1, 1, 1)
+        return
+    end
     lg.setColor(1, 1, 1, 1)
     panel.draw(x, y, w, h)
     local sp = self.speaker
     if sp and sp.portrait then
         local p = sp.portrait
-        panel.draw(x + 18, y + 18, 118, h - 36, theme.smallPanel)
+        panel.draw(x + 18, y + 18, 124, h - 36, "small")
         local image = p.image
         local _, _, qw, qh = p.quad:getViewport()
-        local s = p.scale or math.min(100 / qw, (h - 50) / qh)
+        local s = p.scale or math.min(104 / qw, (h - 50) / qh)
         lg.setColor(1, 1, 1, 1)
-        lg.draw(image, p.quad, math.floor(x + 18 + 59 - qw * s / 2), math.floor(y + h - 22 - qh * s), 0, s, s)
+        lg.draw(image, p.quad, math.floor(x + 18 + 62 - qw * s / 2), math.floor(y + h - 24 - qh * s), 0, s, s)
     end
     if sp and sp.name then
-        local font = theme.font("body")
+        local font = theme.font("small")
         local tw = font:getWidth(sp.name)
-        panel.draw(x + 26, y - 30, tw + 40, 42)
+        local nh = font:getHeight() + 14
+        panel.draw(x + 24, y - nh + 6, tw + 36, nh, "small")
+        local c = theme.nameColor(sp.color)
+        local px = theme.pixelOf(font)
         lg.setFont(font)
-        lg.setColor(sp.color or theme.colors.accent)
-        lg.print(sp.name, x + 46, y - 21)
+        if theme.textShadow then
+            lg.setColor(theme.colors.shadow)
+            lg.print(sp.name, x + 42 + px, y - nh + 13 + px)
+        end
+        lg.setColor(c)
+        lg.print(sp.name, x + 42, y - nh + 13)
     end
     if self.text then
-        self.text:draw(x + self:textLeft(), y + 26)
+        self.text:draw(x + self:textLeft(), y + 24)
     end
     if self.state == "text" and self.text:isDone() then
         local arrow = theme.image("next")
         lg.setColor(1, 1, 1, 1)
-        lg.draw(arrow, x + w - 48, math.floor(y + h - 42 + math.sin(self.time * 6) * 3), 0, 0.85, 0.85)
+        local bob = math.floor(math.sin(self.time * 6) * 3 + 0.5)
+        if arrow then
+            lg.draw(arrow, x + w - 48, y + h - 42 + bob, 0, 0.85, 0.85)
+        else
+            panel.arrow(x + w - 34, y + h - 26 + bob, self.page < #self.pages and "down" or "down", 14)
+        end
     end
     if self.state == "choice" and (not self.text or self.text:isDone()) then
-        self:drawChoices()
+        self:drawChoices(x, y, h)
     end
     lg.setColor(1, 1, 1, 1)
 end

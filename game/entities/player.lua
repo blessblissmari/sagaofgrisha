@@ -106,20 +106,25 @@ function Player:footstep()
     end
 end
 
+-- the weapon from the bag (game.weapon()): reach, power and the picture of the swing
 function Player:attack()
+    local weapon = G().weapon()
+    self.weapon = weapon
     self.attackTime = 0.2
-    self.cooldown = 0.32
+    self.attackLength = 0.2
+    self.cooldown = 0.32 - (weapon.speed or 0) * 0.03
     self.sprite:play("hit", self.facing, true)
     audio.play("swing")
     local d = Player.DIRECTIONS[self.facing]
-    local cx, cy = self.x + d[1] * 18, self.y - 10 + d[2] * 16
-    local w, h = 30, 28
+    local reach = weapon.reach or 18
+    local cx, cy = self.x + d[1] * reach, self.y - 10 + d[2] * (reach - 2)
+    local w, h = 16 + reach * 0.8, 14 + reach * 0.8
     local hit = false
     local targets = self.world:query(cx - w / 2, cy - h / 2, w, h, function(e)
         return e.team == "enemy"
     end)
     for _, e in ipairs(targets) do
-        if e:hurt(1, { from = self, knockback = 240, attacker = self }) then
+        if e:hurt(weapon.power or 1, { from = self, knockback = 240, attacker = self }) then
             hit = true
             self.world.fx:play("slash", e.x, e.y - 12, { scale = 0.45 })
         end
@@ -171,8 +176,40 @@ function Player:heal(amount)
     G().state.hp = self.hp
 end
 
+local ANGLES = { right = 0, down = math.pi / 2, left = math.pi, up = -math.pi / 2 }
+
+-- the weapon icon swings in an arc in front of the hero
+function Player:drawWeapon()
+    local weapon = self.weapon
+    if not weapon or not weapon.icon or self.attackTime <= 0 then
+        return
+    end
+    local image = require("engine.assets").image("assets/sprites/icons/" .. weapon.icon .. ".png")
+    local k = 1 - self.attackTime / (self.attackLength or 0.2)
+    local base = ANGLES[self.facing] or 0
+    local style = weapon.swing or "slash"
+    local angle, dist = base, 4
+    if style == "thrust" then
+        dist = 2 + math.sin(k * math.pi) * 10
+    else
+        local arc = style == "chop" and 1.6 or 2.2
+        angle = base - arc / 2 + arc * k
+    end
+    local px, py = self.x + math.cos(angle) * dist, self.y - 12 + math.sin(angle) * dist
+    -- the icons are drawn blade up-right (-45 degrees), the hilt in the bottom-left corner
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.draw(image, math.floor(px), math.floor(py), angle + math.pi / 4, 0.55, 0.55, 5, 29)
+end
+
 function Player:draw()
+    local behind = self.facing == "up"
+    if behind then
+        self:drawWeapon()
+    end
     self:drawSprite()
+    if not behind then
+        self:drawWeapon()
+    end
 end
 
 return Player

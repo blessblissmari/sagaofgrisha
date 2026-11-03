@@ -112,7 +112,7 @@ end
 function Title:setMenu(items, caption)
     self.caption = caption
     self.menu = ui.Menu(items, {
-        align = "center", width = 360, shadow = false,
+        align = "center", width = 360,
         cancel = #self.stack > 0 and function() self:back() end or nil,
     })
 end

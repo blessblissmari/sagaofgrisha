@@ -26,11 +26,13 @@ function ui.font(name)
     return theme.font(name)
 end
 
--- opts: font (name or Font), color (name or table), align, width, shadow (true / color)
+-- opts: font (name or Font), color (name or table), align, width, alpha,
+--       shadow (true / color / false; FF style: on by default), outline (color)
 function ui.print(text, x, y, opts)
     opts = opts or {}
     local font = type(opts.font) == "string" and theme.font(opts.font) or opts.font or theme.font("body")
     local color = theme.color(opts.color or "ink")
+    local alpha = opts.alpha or 1
     love.graphics.setFont(font)
     text = tostring(text)
     local width = opts.width
@@ -41,18 +43,24 @@ function ui.print(text, x, y, opts)
         tx = width and x + width - font:getWidth(text) or x - font:getWidth(text)
     end
     tx, y = math.floor(tx), math.floor(y)
-    if opts.shadow then
-        local s = opts.shadow == true and theme.colors.shadow or opts.shadow
-        love.graphics.setColor(s)
-        love.graphics.print(text, tx + 2, y + 2)
+    local px = theme.pixelOf(font)
+    local shadow = opts.shadow
+    if shadow == nil then
+        shadow = theme.textShadow
     end
     if opts.outline then
-        love.graphics.setColor(theme.color(opts.outline))
-        for _, o in ipairs({ { -2, 0 }, { 2, 0 }, { 0, -2 }, { 0, 2 } }) do
-            love.graphics.print(text, tx + o[1], y + o[2])
+        local o = theme.color(opts.outline)
+        love.graphics.setColor(o[1], o[2], o[3], (o[4] or 1) * alpha)
+        for _, d in ipairs({ { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 }, { 1, 1 } }) do
+            love.graphics.print(text, tx + d[1] * px, y + d[2] * px)
         end
     end
-    love.graphics.setColor(color[1], color[2], color[3], (color[4] or 1) * (opts.alpha or 1))
+    if shadow then
+        local s = shadow == true and theme.colors.shadow or shadow
+        love.graphics.setColor(s[1], s[2], s[3], (s[4] or 1) * alpha)
+        love.graphics.print(text, tx + px, y + px)
+    end
+    love.graphics.setColor(color[1], color[2], color[3], (color[4] or 1) * alpha)
     love.graphics.print(text, tx, y)
     love.graphics.setColor(1, 1, 1, 1)
     return font:getWidth(text)
@@ -96,9 +104,9 @@ end
 -- Simple bar (hp, timing): a dark frame and a colored fill.
 function ui.bar(x, y, w, h, value, max, color, back)
     local k = math.max(0, math.min(1, value / math.max(max, 1e-6)))
-    love.graphics.setColor(0.1, 0.07, 0.05, 0.9)
+    love.graphics.setColor(theme.colors.barFrame)
     love.graphics.rectangle("fill", x - 2, y - 2, w + 4, h + 4)
-    love.graphics.setColor(back or { 0.3, 0.22, 0.15, 1 })
+    love.graphics.setColor(back or theme.colors.barBack)
     love.graphics.rectangle("fill", x, y, w, h)
     love.graphics.setColor(theme.color(color or "red"))
     love.graphics.rectangle("fill", x, y, math.floor(w * k + 0.5), h)
@@ -107,27 +115,48 @@ function ui.bar(x, y, w, h, value, max, color, back)
     love.graphics.setColor(1, 1, 1, 1)
 end
 
--- "[E] Поднять" centered on x: a small parchment key cap and a label.
+-- "[E] Поднять" centered on x: a small key cap and a label.
 function ui.keyHint(x, y, action, label, opts)
     opts = opts or {}
     local font = theme.font("small")
     local key = input.keyName(action)
-    local kw = math.max(font:getWidth(key) + 12, 22)
+    local fh = font:getHeight()
+    local kh = fh + 4
+    local kw = math.max(font:getWidth(key) + 14, kh)
     local lw = label and font:getWidth(label) + 8 or 0
     local total = kw + lw
     local left = math.floor(x - total / 2)
-    ui.panel.draw(left, y, kw, 22, theme.smallPanel)
-    ui.print(key, left + kw / 2, y + 3, { font = font, align = "center" })
+    ui.panel.draw(left, y, kw, kh, "small")
+    ui.print(key, left + kw / 2, y + 2, { font = font, align = "center" })
     if label then
-        ui.print(label, left + kw + 6, y + 3, { font = font, color = opts.color or "light", shadow = true })
+        ui.print(label, left + kw + 6, y + 2, { font = font, color = opts.color or "light", shadow = true })
     end
+    return total, kh
+end
+
+-- Several hints in a row: ui.keyHints(right, y, { { "confirm", "Надеть" }, { "cancel", "Закрыть" } }, "right")
+function ui.keyHints(x, y, list, align)
+    local font = theme.font("small")
+    local widths, total = {}, 0
+    for i, h in ipairs(list) do
+        local key = input.keyName(h[1])
+        local kw = math.max(font:getWidth(key) + 14, font:getHeight() + 4)
+        widths[i] = kw + (h[2] and font:getWidth(h[2]) + 8 or 0)
+        total = total + widths[i] + (i > 1 and 18 or 0)
+    end
+    local left = align == "right" and x - total or (align == "center" and x - total / 2 or x)
+    for i, h in ipairs(list) do
+        ui.keyHint(left + widths[i] / 2, y, h[1], h[2])
+        left = left + widths[i] + 18
+    end
+    return total
 end
 
 -- Scroll banner with a centered title (chapter names, results).
 function ui.banner(text, cx, y, w, opts)
     opts = opts or {}
-    local h = ui.panel.image("scroll", cx - w / 2, y, w)
     local font = theme.font(opts.font or "body")
+    local h = ui.panel.image("scroll", cx - w / 2, y, w, nil, font:getHeight() + 30)
     ui.print(text, cx, y + (h - font:getHeight()) / 2 + 1, { font = font, align = "center", color = opts.color or "ink" })
     return h
 end
@@ -158,6 +187,7 @@ end
 function ui.drawToasts()
     local font = theme.font("small")
     local y = 16
+    local th = math.max(34, font:getHeight() + 12)
     for _, t in ipairs(toasts) do
         local alpha = math.min(1, t.t * 6, (t.time - t.t) * 3)
         local iconW = t.icon and 30 or 0
@@ -165,12 +195,12 @@ function ui.drawToasts()
         local x = math.floor((screen.width - w) / 2)
         local slide = math.floor((1 - math.min(1, t.t * 6)) * -12)
         love.graphics.setColor(1, 1, 1, alpha)
-        ui.panel.draw(x, y + slide, w, 34)
+        ui.panel.draw(x, y + slide, w, th, "small")
         if t.icon then
-            ui.icon(t.icon, x + 12, y + slide + 4, 0.75, alpha)
+            ui.icon(t.icon, x + 12, y + slide + (th - 24) / 2, 0.75, alpha)
         end
-        ui.print(t.text, x + 16 + iconW, y + slide + 9, { font = font, color = t.color or "ink", alpha = alpha })
-        y = y + 40
+        ui.print(t.text, x + 16 + iconW, y + slide + (th - font:getHeight()) / 2, { font = font, color = t.color or "ink", alpha = alpha })
+        y = y + th + 6
     end
     love.graphics.setColor(1, 1, 1, 1)
 end

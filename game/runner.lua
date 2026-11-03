@@ -16,6 +16,12 @@ function Runner:init(script, host, args, onDone)
     self.args = args or {}
     self.onDone = onDone
     self.box = DialogBox(host and host.dialogBox or nil)
+    -- {@hop}, {@emote=heart} ... in the text: the host makes the speaker react
+    self.box.onEvent = function(speaker, name, value)
+        if self.host and self.host.textEvent then
+            self.host:textEvent(speaker, name, value)
+        end
+    end
     self.director = Director(script, host, self)
     self.name = "script"
 end

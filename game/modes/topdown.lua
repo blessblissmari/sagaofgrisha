@@ -17,7 +17,11 @@
 -- In Tiled (see README): tile property surface (footsteps) and solid,
 -- object layers Spawns, Items (item, count), Mobs (mob), Triggers, NPCs.
 -- Script commands of this mode: spawn(mob, x, y | spawnName), teleport(spawnName),
--- face(dir), disable(zone), enable(zone), camera(zoom).
+-- face(dir), disable(zone), enable(zone), camera(zoom),
+-- cutscenes: walk(who, spawnName | {x, y}), pan(spawnName | who), panBack(), letterbox(on),
+-- emote(who, "!"), hop(who), weather("rain"), daytime("night")
+-- (who = "hero" / "grisha", a pet id, an NPC name).
+-- Stage options: weather = "rain" | "snow" | "leaves" | "fog" | "storm", daytime = "evening" | "night".
 
 local engine = require("engine")
 local audio = engine.audio
@@ -32,6 +36,8 @@ local Entity = engine.Entity
 local Trail = engine.Trail
 local World = engine.World
 local anim = engine.anim
+local emote = engine.emote
+local Weather = engine.Weather
 local Mode = require("game.modes.base")
 local Player = require("game.entities.player")
 local Mob = require("game.entities.mob")
@@ -57,6 +63,7 @@ function NPC:init(o)
     self.w, self.h = 14, 8
     self.solid = false
     self.flipX = p.flip
+    self.name = o.name
 end
 
 function NPC:update(dt)
@@ -101,6 +108,10 @@ function TopDown:init(def)
         st.hp = st.maxHp
         self.player.hp = st.hp
     end
+    self.emotes = emote.List()
+    self.weather = Weather(def.weather, { daytime = def.daytime })
+    self.bars = 0
+    self.walkers = {}
 end
 
 function TopDown:enter()
@@ -308,6 +319,148 @@ function TopDown:cmd_enable(s, zoneName)
     end
 end
 
+-- who: "hero" / "grisha" / "player", a pet id, an NPC name, or an entity
+function TopDown:entityOf(who)
+    if type(who) == "table" then
+        return who
+    end
+    if who == nil or who == "hero" or who == "player" or who == G().player.sprite or who == "grisha" then
+        return self.player
+    end
+    for _, f in ipairs(self.followers) do
+        if f.id == who or f.kind == who or f.petId == who then
+            return f
+        end
+    end
+    for _, e in ipairs(self.world.entities or {}) do
+        if e.name == who then
+            return e
+        end
+    end
+    return nil
+end
+
+function TopDown:pointOf(target)
+    if type(target) == "table" and target[1] then
+        return target[1], target[2]
+    elseif type(target) == "table" then
+        return target.x, target.y
+    end
+    local e = type(target) == "string" and self:entityOf(target)
+    if e and e ~= self.player and target ~= "hero" then
+        return e.x, e.y
+    end
+    return self.world:spawn(target)
+end
+
+function TopDown:cmd_emote(s, who, kind, duration)
+    local e = self:entityOf(who)
+    if e then
+        self.emotes:add(e, kind, duration)
+        audio.play("blip", { volume = 0.5, pitch = kind == "!" and 1.4 or 1 })
+    end
+end
+
+function TopDown:cmd_hop(s, who)
+    local e = self:entityOf(who)
+    if e then
+        e.z = 0
+        self.timer:tween(0.14, e, { z = 10 }, "quadOut", function()
+            self.timer:tween(0.14, e, { z = 0 }, "quadIn")
+        end)
+    end
+end
+
+-- walks a character to a spawn point / {x, y}; the script waits
+function TopDown:cmd_walk(s, who, target, speed)
+    local e = self:entityOf(who)
+    if not e then
+        return nil
+    end
+    local tx, ty = self:pointOf(target)
+    table.insert(self.walkers, { e = e, x = tx, y = ty, speed = speed or 70, director = s })
+    return "wait"
+end
+
+function TopDown:updateWalkers(dt)
+    for i = #self.walkers, 1, -1 do
+        local w = self.walkers[i]
+        local e = w.e
+        local dx, dy = w.x - e.x, w.y - e.y
+        local d = math.sqrt(dx * dx + dy * dy)
+        local dir = math.abs(dx) > math.abs(dy) and (dx > 0 and "right" or "left") or (dy > 0 and "down" or "up")
+        if d < 2 then
+            e.x, e.y = w.x, w.y
+            table.remove(self.walkers, i)
+            if e.sprite then
+                e.sprite:play("idle", dir)
+            end
+            if e == self.player then
+                self.player.facing = dir
+                self.trail:reset(e.x, e.y)
+            end
+            w.director:continue()
+        else
+            local step = math.min(d, w.speed * dt)
+            e.x, e.y = e.x + dx / d * step, e.y + dy / d * step
+            if e.sprite then
+                e.sprite:play("walk", dir)
+                e.sprite:update(dt)
+            end
+            if e == self.player then
+                self.player.facing = dir
+                self.trail:push(e.x, e.y)
+                for _, f in ipairs(self.followers) do
+                    f:update(dt)
+                end
+            end
+        end
+    end
+end
+
+function TopDown:cmd_pan(s, target, time)
+    local x, y = self:pointOf(target)
+    self.panning = { x = self.camera.x, y = self.camera.y }
+    self.timer:tween(time or 1, self.panning, { x = x, y = y - 12 }, "quadInOut")
+    return time or 1
+end
+
+function TopDown:cmd_panBack(s, time)
+    if self.panning then
+        local p = self.player
+        self.timer:tween(time or 0.8, self.panning, { x = p.x, y = p.y - 12 }, "quadInOut", function()
+            self.panning = nil
+        end)
+        return time or 0.8
+    end
+end
+
+function TopDown:cmd_letterbox(s, on)
+    self.timer:tween(0.5, self, { bars = on == false and 0 or 1 }, "quadInOut")
+end
+
+function TopDown:cmd_weather(s, kind)
+    self.weather:set(kind)
+end
+
+function TopDown:cmd_daytime(s, name)
+    self.weather:setTime(name)
+end
+
+-- {@emote=heart}, {@hop}, {@shake} in dialogue text: the speaker reacts
+function TopDown:textEvent(speaker, name, value)
+    local who = speaker and speaker.id
+    if name == "emote" or name == "emotion" then
+        self:cmd_emote(nil, who, value)
+    elseif name == "hop" then
+        self:cmd_hop(nil, who)
+    elseif name == "shake" or name == "quake" then
+        self.camera:shake(tonumber(value) or 5, 0.4)
+    elseif name == "sound" then
+        audio.play(value)
+    end
+end
+
 function TopDown:cmd_camera(s, zoom)
     self.timer:tween(0.6, self.camera, { zoom = zoom or 2 }, "quadInOut")
     return 0.6
@@ -318,14 +471,21 @@ end
 function TopDown:update(dt, fromScript)
     Mode.update(self, dt)
     local world, player = self.world, self.player
+    self.emotes:update(dt)
+    self.weather:update(dt)
     if fromScript or scene.top() ~= self then
         -- a dialogue is open: the world stands still, but stays alive
         world.map:update(dt)
         for _, f in ipairs(self.followers) do
             f.sprite:update(dt)
         end
+        self:updateWalkers(dt)
+        if self.panning then
+            self.camera:lookAt(self.panning.x, self.panning.y)
+        end
         self.camera:update(dt)
         self.prompt = nil
+        self.nearby = nil
         return
     end
     if self:pausePressed() then
@@ -348,8 +508,10 @@ function TopDown:update(dt, fromScript)
     local pickup = world:nearest(player.x, player.y - 4, 22, function(e)
         return e.pickable and not e.auto and not e.delay
     end)
+    self.nearby = nil
     if pickup and not player.dying then
         self.prompt = "Поднять"
+        self.nearby = pickup
         if interact then
             pickup:collect(player)
             interact = false
@@ -360,6 +522,7 @@ function TopDown:update(dt, fromScript)
         if zone and not self.prompt then
             local p = zone.properties
             self.prompt = (p.prompt and p.prompt ~= "") and p.prompt or "Осмотреть"
+            self.nearby = zone
         end
     end
 
@@ -383,10 +546,27 @@ function TopDown:draw()
     self.world:draw(self.camera, {
         overlay = function()
             self.fx:draw()
+            -- FF9-like "!" over the hero when something can be done here
+            if self.nearby and not self.player.dying then
+                local p = self.player
+                emote.draw(self.nearby.pickable and "?" or "!", p.x, p.y - 30 - (p.z or 0),
+                    1 + (self.time % 10), 0.42)
+            end
+            self.emotes:draw(function(e)
+                return e.x, e.y - (e.height or 28) - (e.z or 0)
+            end, 0.42)
         end,
     })
+    self.weather:draw(screen.width, screen.height, self.camera.x * self.camera.zoom, self.camera.y * self.camera.zoom)
     if engine.debug.enabled then
         self.world:drawDebug(self.camera)
+    end
+    if self.bars > 0 then
+        local bh = math.floor(56 * self.bars)
+        love.graphics.setColor(0, 0, 0, 1)
+        love.graphics.rectangle("fill", 0, 0, screen.width, bh)
+        love.graphics.rectangle("fill", 0, screen.height - bh, screen.width, bh)
+        love.graphics.setColor(1, 1, 1, 1)
     end
     self:drawHud()
 end
