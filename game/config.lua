@@ -105,6 +105,12 @@ return {
             drop = { "space" },
             select = { "space", "return" },
         },
+        cards = {                           -- the card game (Balatro style)
+            select = { "space", "up", "w" },  -- take / put back the card under the cursor
+            play = { "return" },
+            discard = { "x", "backspace" },
+            sort = { "c", "tab" },          -- by rank / by suit
+        },
         fishing = {
             reel = { "space", "j", "return" }, -- hold to raise the bar
         },

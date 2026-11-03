@@ -57,6 +57,16 @@ return {
         card_flip = { file = "sfx/card_flip.ogg", volume = 0.5, pitchVariation = 0.08 },
         card_deal = { file = "sfx/card_deal.ogg", volume = 0.5, pitchVariation = 0.1 },
         chips = { file = "sfx/chips.ogg", volume = 0.5 },
+        -- Kenney (CC0): Space Shooter Redux and Boardgame pack
+        laser = { files = { "sfx/laser.ogg", "sfx/laser2.ogg" }, volume = 0.25, pitchVariation = 0.08, cooldown = 0.05 },
+        shield_up = { file = "sfx/shield_up.ogg", volume = 0.5 },
+        shield_down = { file = "sfx/shield_down.ogg", volume = 0.5 },
+        two_tone = { file = "sfx/two_tone.ogg", volume = 0.4 },
+        die_throw = { files = { "sfx/die_throw.ogg", "sfx/die_throw2.ogg" }, volume = 0.7 },
+        die_shuffle = { file = "sfx/die_shuffle.ogg", volume = 0.6 },
+        card_place = { file = "sfx/card_place.ogg", volume = 0.6, pitchVariation = 0.1 },
+        card_slide = { file = "sfx/card_slide.ogg", volume = 0.5, pitchVariation = 0.1 },
+        chips2 = { file = "sfx/chips2.ogg", volume = 0.6 },
 
         -- tetris
         t_move = { file = "sfx/t_move.ogg", volume = 0.3 },

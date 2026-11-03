@@ -26,6 +26,8 @@ return {
         description = "Красное и горькое. Лечит полностью." },
     ether = { name = "Эфир", icon = "ether", heal = 6, stack = 5,
         description = "Синее зелье. Лечит 3 сердца." },
+    fish = { name = "Рыба", icon = "fish", heal = 4, stack = 9,
+        description = "Свежий улов. Лечит 2 сердца (если пожарить — ещё вкуснее)." },
     clover = { name = "Клевер", icon = "clover", stack = 9,
         description = "Четыре листика. В бою чаще бывают криты." },
     mushroom = { name = "Гриб", icon = "mushroom", heal = 1, stack = 9,

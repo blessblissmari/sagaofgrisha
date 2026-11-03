@@ -55,6 +55,7 @@ local game = {
     battle = { atb = "active", timing = 1, fast = 2.5 },
     units = require("game.data.units"),
     jokers = require("game.data.jokers"),
+    fish = require("game.data.fish"),
     backgrounds = require("game.data.backgrounds"),
     skies = require("game.data.skies"),
     sounds = require("game.data.sounds"),
@@ -69,6 +70,10 @@ local game = {
         battle = "game.modes.battle", tactics = "game.modes.tactics", tetris = "game.modes.tetris",
         puyo = "game.modes.puyo", breakout = "game.modes.breakout", xonix = "game.modes.xonix",
         cards = "game.modes.cards", iso = "game.modes.iso",
+        -- mini-games (all of them are built on game/modes/arcade.lua)
+        snake = "game.modes.snake", match3 = "game.modes.match3", memory = "game.modes.memory",
+        fishing = "game.modes.fishing", rhythm = "game.modes.rhythm", shmup = "game.modes.shmup",
+        lockpick = "game.modes.lockpick", dice = "game.modes.dice", racing = "game.modes.racing",
     },
 }
 
@@ -172,6 +177,10 @@ function game.newGame()
         inventory = Inventory(game.items, p.slots or 24),
         flags = {}, counters = {}, abilities = {}, party = {}, pets = {},
         collected = {}, defeated = {}, equipment = {}, quests = {},
+        codex = {},   -- collections: codex.fish[id] = { count, best }, codex.people[id] = true...
+        journal = {}, -- the story so far: { text, chapter }, see s:journal()
+        memory = {},  -- what the characters remember: memory[who][what] = true (s:remember)
+        affinity = {}, -- how much the characters like the hero: affinity[who] = number
         hero = util.deepCopy(p.battle),
     }
     st.hero.maxHp = st.hero.hp
@@ -392,6 +401,7 @@ function game.save()
         flags = st.flags, counters = st.counters, abilities = st.abilities,
         party = st.party, pets = st.pets, collected = st.collected, defeated = st.defeated,
         hero = st.hero, equipment = st.equipment, quests = st.quests,
+        codex = st.codex, journal = st.journal, memory = st.memory, affinity = st.affinity,
     }
     save.write("savegame", data)
 end
