@@ -55,14 +55,20 @@ local function toColor(c, default)
 end
 
 -- the hand frames: "Fantasy FPS Hands" by Ragnar Random (CC0), reduced to 24 colors
+-- The weapon is held between two layers of the hand: the fist, then the weapon, then
+-- fist_N_front (the fingers in front of the handle, cut out of the same frame), so the
+-- guard rests on the fist and the handle goes inside it.
 local HANDS = {
     fist = { "assets/sprites/fp/fist_1.png", "assets/sprites/fp/fist_2.png", "assets/sprites/fp/fist_3.png" },
+    front = { "assets/sprites/fp/fist_1_front.png", "assets/sprites/fp/fist_2_front.png", "assets/sprites/fp/fist_3_front.png" },
     open = "assets/sprites/fp/hand_open.png",
 }
--- where the weapon handle goes through each fist frame (the icons have the blade up-left,
--- the handle bottom-right; items can set grip = { x, y } inside their 34x34 icon)
+-- where the handle goes into each fist frame (at the top of the fist). The icons have the
+-- blade up-left; they are turned blade up. Items set grip = { x, y }: the point of their
+-- 34x34 icon that sits there (on the handle, just under the guard).
 local AUTOMAP = {}
-local GRIP = { { 70, 61 }, { 64, 50 }, { 76, 55 } }
+local GRIP = { { 64, 44 }, { 70, 28 }, { 82, 36 } }
+local UPRIGHT = math.pi / 4 - 0.4 -- icon blade up-left -> up, leaning a bit to the left
 
 function Raycaster:init(def)
     Mode.init(self, def)
@@ -1074,17 +1080,18 @@ function Raycaster:drawWeapon()
     lg.push()
     lg.translate(hx + grip[1], hy + grip[2])
     lg.rotate(rot * 0.5)
-    if id ~= "fists" and weapon.icon then
-        -- the weapon icon from the bag, held by its handle (drawn under the fingers)
-        local icon = assets.image(ui.theme.icons .. weapon.icon .. ".png")
-        local wg = weapon.grip or { 26, 26 }
-        lg.draw(icon, 0, 0, -0.12 + rot * 0.6, 2.4, 2.4, wg[1], wg[2])
-    end
     lg.draw(hand, -grip[1], -grip[2])
     -- the sleeve continues below the frame when the arm is raised
     local hw, hh = hand:getDimensions()
     self.sleeveQuad = self.sleeveQuad or love.graphics.newQuad(0, hh - 2, hw, 2, hw, hh)
     lg.draw(hand, self.sleeveQuad, -grip[1], -grip[2] + hh - 1, 0, 1, 60)
+    if id ~= "fists" and weapon.icon then
+        -- the weapon icon from the bag, then the fingers over its handle
+        local icon = assets.image(ui.theme.icons .. weapon.icon .. ".png")
+        local wg = weapon.grip or { 26, 26 }
+        lg.draw(icon, 0, 0, UPRIGHT + rot * 0.6, 2.4, 2.4, wg[1], wg[2])
+        lg.draw(assets.image(HANDS.front[frame]), -grip[1], -grip[2])
+    end
     lg.pop()
     if self.blockFlash > 0 then
         lg.setColor(1, 1, 1, self.blockFlash * 2)

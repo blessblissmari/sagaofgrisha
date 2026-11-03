@@ -10,7 +10,8 @@
 --   attack, defense, speed   bonuses
 --   reach     top-down swing distance (pixels), power = damage in the world
 --   swing     first-person style: "slash" (sword), "chop" (axe, club), "thrust" (spear, dagger)
---   fp        first-person picture (an image path); without it the icon is drawn big
+--   fp        first-person picture (an image path); without it the icon is drawn big,
+--   grip      { x, y } in the icon: the point of the handle that sits on top of the fist
 --   dtype     damage type in battles (slash chop thrust blunt): enemies are weak to some
 --   combo     max hits of the battle "Атака" combo, skill = the weapon's battle skill
 
@@ -37,17 +38,17 @@ return {
     -- weapons
     fists = { name = "Кулаки", icon = "fist", kind = "weapon", slot = "weapon", attack = 0, reach = 14,
         power = 1, swing = "thrust", dtype = "blunt", combo = 3, skill = "bonk", description = "Ничего в руках. Зато руки свободны." },
-    stick = { name = "Палка", icon = "club", kind = "weapon", slot = "weapon", attack = 1, reach = 18,
+    stick = { name = "Палка", icon = "club", grip = { 22, 22 }, kind = "weapon", slot = "weapon", attack = 1, reach = 18,
         power = 1, swing = "chop", dtype = "blunt", combo = 2, skill = "bonk", description = "Крепкая палка с пляжа. Атака +1." },
-    sword = { name = "Меч", icon = "sword", kind = "weapon", slot = "weapon", attack = 4, reach = 22,
+    sword = { name = "Меч", icon = "sword", grip = { 26, 26 }, kind = "weapon", slot = "weapon", attack = 4, reach = 22,
         power = 2, swing = "slash", dtype = "slash", combo = 3, skill = "whirl", description = "Простой железный меч. Атака +4." },
-    knight_sword = { name = "Рыцарский меч", icon = "knight_sword", kind = "weapon", slot = "weapon", attack = 7,
+    knight_sword = { name = "Рыцарский меч", icon = "knight_sword", grip = { 26, 26 }, kind = "weapon", slot = "weapon", attack = 7,
         reach = 24, power = 3, swing = "slash", dtype = "slash", combo = 3, skill = "whirl", description = "Тяжёлый и надёжный. Атака +7." },
-    dagger = { name = "Кинжал", icon = "dagger", kind = "weapon", slot = "weapon", attack = 2, speed = 2,
+    dagger = { name = "Кинжал", icon = "dagger", grip = { 23, 21 }, kind = "weapon", slot = "weapon", attack = 2, speed = 2,
         reach = 16, power = 1, swing = "thrust", dtype = "thrust", combo = 4, skill = "venom", description = "Быстрый удар. Атака +2, скорость +2." },
-    axe = { name = "Топор", icon = "axe", kind = "weapon", slot = "weapon", attack = 6, speed = -1,
+    axe = { name = "Топор", icon = "axe", grip = { 21, 22 }, kind = "weapon", slot = "weapon", attack = 6, speed = -1,
         reach = 20, power = 3, swing = "chop", dtype = "chop", combo = 2, skill = "cleave", description = "Рубит с плеча. Атака +6, скорость -1." },
-    spear = { name = "Копьё", icon = "spear", kind = "weapon", slot = "weapon", attack = 5,
+    spear = { name = "Копьё", icon = "spear", grip = { 20, 20 }, kind = "weapon", slot = "weapon", attack = 5,
         reach = 30, power = 2, swing = "thrust", dtype = "thrust", combo = 2, skill = "pierce", description = "Длинное. Достаёт издалека. Атака +5." },
 
     -- armor
