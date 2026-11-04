@@ -18,8 +18,11 @@
 --
 -- A new mini-game: local MyGame = class(Arcade) with
 --   MyGame.info = { title = "...", rules = "...", keys = { { "fire", "огонь" } } }
+--     info.keysHint = false   no fading line of keys at the bottom during the first seconds
+--     info.hud = false        no score / lives / time in the corners (the game draws its own)
 --   setup()  onStart()  step(dt)  drawGame()  and optionally progress() -> text for the HUD,
---   goalText() -> text for the title card, results() -> extra lines for the result card.
+--   goalText() -> text for the title card, results() -> extra lines for the result card,
+--   pauseItems() -> extra items of the pause menu (default: "Сдаться"; add yours to Arcade.pauseItems(self)).
 -- Inside: self:addScore(n, x, y), self:popup(x, y, text), self:banner(text),
 --   self:shake(), self:flash(), self:loseLife() -> true when no lives left,
 --   self:win(), self:lose().

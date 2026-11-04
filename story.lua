@@ -182,17 +182,51 @@ game.stage "island" {
     battle = "fight_day",
     triggers = {
         cave = { "cave" },
-        dungeon = { "dungeon", transition = "iris" },
+        -- дверь подземелья заперта: мини-игра «Взлом» (game/modes/lockpick.lua)
+        dungeon = function(s)
+            if not s:flag("dungeon_open") then
+                local a = s:ask("grisha", "Заперто. {p}Замок старый, ржавый... Вскрыть?", { "Вскрыть", "Уйти" })
+                if a ~= 1 then return end
+                local r = s:play("lockpick", { goal = 1, lives = 3, level = 1 })
+                if not r.win then
+                    s:say("grisha", "{shake}Хрусь!{/} Отмычки кончились. {p}Потом ещё попробую.")
+                    return
+                end
+                s:flag("dungeon_open", true)
+                s:say("grisha", "{wave}Щёлк!{/} Открыто.")
+            end
+            s:go("dungeon", "iris")
+        end,
         sacks = function(s)
             s:say("grisha", "Мешки с мукой. {p}И... {accent}морковка{/}!")
             if s:once("sacks_carrot") then
                 s:give("carrot", 1)
             end
+            -- Кашка зовёт в свой покер (game/modes/cards.lua); prize — что дают за победу
+            local a = s:ask("bunny", "Сыграем в мой покер? {p}На морковку!", { "Сыграем", "Потом" })
+            if a == 1 then
+                local r = s:play("cards", { level = 1, prize = { carrot = 2 } })
+                if r.win then
+                    s:say("bunny", "{wave}Ты выиграл!{/} Ладно, держи морковку...")
+                else
+                    s:say("bunny", "{rainbow}Ха-ха!{/} Морковка моя!")
+                end
+            end
         end,
         -- конец моста: «вход платный — одна партия в тетрис» (см. табличку sign в Tiled)
         test_trigger = function(s)
             if s:flag("bridge_paid") then
-                s:say("grisha", "За мостом только море... {p}Пока что.")
+                -- с края моста клюёт: мини-игра «Рыбалка» (game/modes/fishing.lua), рыба идёт в сумку
+                local a = s:ask("grisha", "За мостом только море... {p}Зато какой клёв! Порыбачить?",
+                    { "Закинуть удочку", "Не сейчас" })
+                if a == 1 then
+                    local r = s:play("fishing", { goal = 2, level = 1 })
+                    if r.win then
+                        s:say("bunny", "{wave}Рыбка!{/} {p}Чур, мне хвостик.")
+                    else
+                        s:say("grisha", "Сорвалась... {p}В другой раз.")
+                    end
+                end
                 return
             end
             s:emote("grisha", "?")
@@ -201,7 +235,7 @@ game.stage "island" {
                 local r = s:play("tetris")
                 if r.win then
                     s:flag("bridge_paid", true)
-                    s:say("grisha", "{wave}Есть!{/} Три линии — и мост мой.")
+                    s:say("grisha", "{wave}Есть!{/} Три линии — и мост мой. {p}С края, наверное, отлично клюёт.")
                     s:give("coin", 5)
                 else
                     s:say("grisha", "Эх... {shake}ещё разок{/} потом попробую.")

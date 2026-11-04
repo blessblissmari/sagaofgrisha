@@ -42,8 +42,10 @@ function Player:update(dt)
     self.cooldown = math.max(0, self.cooldown - dt)
     self.attackTime = math.max(0, self.attackTime - dt)
     local dx, dy = 0, 0
+    local running = false
     if self.controllable and not self.dying and not (self.world and self.world.frozen) then
         dx, dy = input.direction()
+        running = input.down("run")
         if input.pressed("attack") and self.cooldown <= 0 then
             self:attack()
         elseif input.pressed("throw") and self.cooldown <= 0 then
@@ -56,7 +58,8 @@ function Player:update(dt)
     self.isMoving = dx ~= 0 or dy ~= 0
     if self.isMoving then
         local nx, ny = util.normalize(dx, dy)
-        self:moveBy(nx * self.speed * dt, ny * self.speed * dt)
+        local speed = self.speed * (running and 1.6 or 1) -- [Shift] - run
+        self:moveBy(nx * speed * dt, ny * speed * dt)
         self.lastDx, self.lastDy = dx, dy
         if math.abs(dx) > math.abs(dy) then
             self.facing = dx > 0 and "right" or "left"
@@ -64,13 +67,14 @@ function Player:update(dt)
             self.facing = dy > 0 and "down" or "up"
         end
         self.stepTimer = self.stepTimer + dt
-        if self.stepTimer >= 0.3 then
+        if self.stepTimer >= (running and 0.2 or 0.3) then
             self.stepTimer = 0
             self:footstep()
         end
     else
         self.stepTimer = 0.2 -- the first step sounds right away
     end
+    self.sprite.speed = (self.isMoving and running) and 1.5 or 1
     if self.attackTime > 0 then
         self.sprite:play("hit", self.facing)
     elseif self.isMoving then
