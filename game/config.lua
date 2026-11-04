@@ -120,6 +120,12 @@ return {
         fishing = {
             reel = { "space", "j", "return" }, -- hold to raise the bar
         },
+        tactics = {                         -- the hex battle (Heroes of Might and Magic style)
+            wait = { "q" },                 -- move at the end of the round
+            defend = { "e" },
+            spell = { "c", "b" },           -- Гриша's spell book
+            cycle = { "tab" },              -- another side of the enemy to attack from
+        },
         rhythm = {
             laneLeft = { "left", "a" },
             laneDown = { "down", "s" },
@@ -141,6 +147,7 @@ return {
         fire = { "a", "rightshoulder" }, action = { "x" }, focus = { "leftshoulder" }, reel = { "a" },
         select = { "a" }, play = { "x" }, discard = { "y" }, sort = { "back" },
         pick = { "a" }, roll = { "x" }, bank = { "y" },
+        wait = { "x" }, defend = { "y" }, spell = { "rightshoulder" }, cycle = { "leftshoulder" },
         laneLeft = { "dpleft", "x" }, laneDown = { "dpdown", "a" }, laneUp = { "dpup", "y" }, laneRight = { "dpright", "b" },
     },
 

@@ -46,6 +46,8 @@ Battle.keymap = "battle"
 local FIELD_W, FIELD_H, CELL = 520, 280, 40
 local CX, CY = 480, 290
 local COM = rules.COM
+local HUD_H = 118   -- the bottom window
+local LEFT_W = 420  -- its left part: the commands; the party is to the right of it
 local MAX_BP = 5
 
 -- units ------------------------------------------------------------------------------
@@ -397,8 +399,9 @@ end
 -- top = true: the main command menu, [Esc] opens the pause menu there
 function Battle:chooseMenu(items, caption, top, help)
     -- the main commands in two columns, lists in one; three rows fit the bottom window
-    self.menu = ui.Menu(items, { font = ui.font("small"), columns = top and 2 or 1, columnGap = 36, visible = 3,
-        cursorScale = (ui.theme.cursorScale or 1) * 0.8 })
+    -- (columns of their own width that end before the divider: long names never run into the party)
+    self.menu = ui.Menu(items, { font = ui.font("small"), columns = top and 2 or 1, columnGap = 32, visible = 3,
+        maxWidth = LEFT_W - 54, cursorScale = (ui.theme.cursorScale or 1) * 0.8 })
     self.menuCaption = caption
     self.menuTop = top
     while true do
@@ -651,7 +654,7 @@ end
 
 local function costText(sk)
     if sk.cost and sk.cost.bp then
-        return "  " .. string.rep("★", sk.cost.bp)
+        return " " .. string.rep("★", sk.cost.bp)
     end
     return ""
 end
@@ -1829,8 +1832,6 @@ end
 --   top     the timeline and one line of text (help / what happens now)
 --   field   only small marks in the world (hp bars, "!", numbers, the cursor)
 --   bottom  one window: commands or target info on the left, the party on the right
-local HUD_H = 118
-local LEFT_W = 372
 
 function Battle:drawTimeline()
     local lg = love.graphics
@@ -1959,9 +1960,24 @@ function Battle:drawHud()
     elseif self.cursor and self.targetAll then
         ui.print("Все цели", lx, ly, { font = "small", color = "accent" })
     elseif not self.results then
-        local hints = "[" .. input.keyName("view") .. "] вид   [" .. input.keyName("camLeft") .. "/" .. input.keyName("camRight")
-            .. "] камера   [" .. input.keyName("fast") .. "] быстрее"
-        ui.print(hints, lx, by + HUD_H - 34, { font = "small", color = "faded", width = LEFT_W - 30 })
+        -- key hints: wrapped between the hints, never inside one
+        local font = ui.font("small")
+        local chunks = { "[" .. input.keyName("view") .. "] вид",
+            "[" .. input.keyName("camLeft") .. "/" .. input.keyName("camRight") .. "] камера",
+            "[" .. input.keyName("fast") .. "] быстрее" }
+        local lines, line = {}, nil
+        for _, c in ipairs(chunks) do
+            if line and font:getWidth(line .. "   " .. c) <= LEFT_W - 40 then
+                line = line .. "   " .. c
+            else
+                if line then table.insert(lines, line) end
+                line = c
+            end
+        end
+        table.insert(lines, line)
+        for i, l in ipairs(lines) do
+            ui.print(l, lx, by + HUD_H - 12 - (#lines - i + 1) * (font:getHeight() + 2), { font = font, color = "faded" })
+        end
     end
     self:drawParty(bx + LEFT_W + 20, by + 12, bw - LEFT_W - 40)
     -- QTE windows without a target in the world (bars, mash, hold)

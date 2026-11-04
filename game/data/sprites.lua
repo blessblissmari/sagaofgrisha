@@ -51,8 +51,10 @@ end
 local function tinyTactics(name)
     return {
         image = "assets/sprites/iso/" .. name .. ".png", frame = { 32, 32 }, origin = { 16, 27 }, default = "idle.se",
+        isoWeapons = true, -- frames of the attack match assets/sprites/iso/weapons.png
         animations = {
-            idle = { se = { "1-4", 1, 0.2 }, ne = { "1-4", 4, 0.2 } },
+            -- one still frame: the idle rows of the sheet step in place and look like walking
+            idle = { se = { 1, 1, 1 }, ne = { 1, 4, 1 } },
             walk = { se = { "1-4", 2, 0.11 }, ne = { "1-4", 5, 0.11 } },
             attack = { se = { "1-4", 3, 0.06, "pauseAtEnd" }, ne = { "1-4", 6, 0.06, "pauseAtEnd" } },
             charge = { se = { 1, 7, 1 }, ne = { 2, 8, 1 } },
@@ -71,7 +73,7 @@ local function classicHero(index)
         image = "assets/sprites/iso/classic_heroes.png", frame = { 32, 32 }, left = index * 128,
         origin = { 17, 31 }, default = "idle.se",
         animations = {
-            idle = { se = { "1-4", 1, 0.2 }, ne = { "1-4", 4, 0.2 } },
+            idle = { se = { 1, 1, 1 }, ne = { 1, 4, 1 } },
             walk = { se = { "1-4", 2, 0.11 }, ne = { "1-4", 5, 0.11 } },
             attack = { se = { "1-3", 3, 0.08, "pauseAtEnd" }, ne = { "1-3", 6, 0.08, "pauseAtEnd" } },
             charge = { se = { 1, 3, 1 }, ne = { 1, 6, 1 } },
@@ -97,13 +99,46 @@ return {
         },
     },
 
-    -- side view hero (platformer, battles): GrafxKid "Classic hero"
+    -- Гриша from the side (platformer, fishing, rhythm): the same sheet, rows "left" / "right"
+    -- and the punches of the third row
+    grisha_side = {
+        image = HERO_TD, frame = { 16, 16 }, origin = { 8, 16 }, scale = 1, default = "idle",
+        animations = {
+            idle = { 5, 2, 1 },
+            walk = { "5-8", 2, 0.12 },
+            run = { "5-8", 2, 0.07 },
+            jump = { 6, 2, 1 },
+            fall = { 8, 2, 1 },
+            hurt = { 5, 1, 1 },
+            punch = { "3-4", 3, 0.08, "pauseAtEnd" },
+            kick = { 4, 3, 1 },
+            push = { "5-8", 2, 0.16 },
+        },
+    },
+
+    -- Гриша in the isometric mode: facing the camera for SE/SW, the back for NE/NW
+    -- (4/3 x zoom 3 = whole pixels)
+    grisha_iso = {
+        image = HERO_TD, frame = { 16, 16 }, origin = { 8, 16 }, scale = 4 / 3, default = "idle.se",
+        animations = {
+            idle = { se = { 5, 1, 1 }, ne = { 1, 1, 1 } },
+            walk = { se = { "5-8", 1, 0.12 }, ne = { "1-4", 1, 0.12 } },
+            attack = { se = { "7-8", 3, 0.09, "pauseAtEnd" }, ne = { "5-6", 3, 0.09, "pauseAtEnd" } },
+            charge = { se = { 7, 3, 1 }, ne = { 5, 3, 1 } },
+            release = { se = { 8, 3, 1 }, ne = { 6, 3, 1 } },
+            hurt = { se = { 5, 1, 1 }, ne = { 1, 1, 1 } },
+            dead = { se = { 5, 1, 1 }, ne = { 1, 1, 1 } },
+            weak = { se = { 5, 1, 1 }, ne = { 1, 1, 1 } },
+        },
+    },
+
+    -- GrafxKid "Classic hero" (side view): kept for extras, Гриша is grisha_side
     hero_side = {
         image = HEROES, frame = { 16, 16 }, origin = { 8, 16 }, scale = 1, default = "idle",
         animations = {
             idle = { "2-5", 8, 0.18 },
             walk = { "2-4", 10, 0.1 },
-            run = { "9-10", 17, 0.08 },
+            run = { "2-4", 10, 0.07 },
             jump = { 2, 13, 1 },
             fall = { 3, 13, 1 },
             hurt = { 2, 15, 1 },

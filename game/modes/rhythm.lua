@@ -133,11 +133,11 @@ function Rhythm:setup()
         self.white[k] = assets.quad(self.arrows, xy[1], xy[2], 32, 32)
         self.green[k] = assets.quad(self.arrows, xy[1] + 102, xy[2], 32, 32)
     end
-    local hero = G().sprites.hero_side
+    local hero = G().sprites.grisha_side -- Гриша (td_hero): steps in place, punches to the arrows
     self.heroImage = assets.image(hero.image)
     local function hq(col, row) return assets.quad(self.heroImage, (col - 1) * 16, (row - 1) * 16, 16, 16) end
-    self.heroPoses = { idle = { hq(2, 8), hq(3, 8), hq(4, 8), hq(5, 8) }, moves = { hq(2, 17), hq(4, 17), hq(12, 17), hq(2, 13),
-        hq(3, 10), hq(9, 17) }, hurt = hq(2, 15) }
+    self.heroPoses = { idle = { hq(5, 1), hq(6, 1), hq(7, 1), hq(8, 1) },
+        moves = { hq(2, 3), hq(8, 3), hq(6, 3), hq(4, 3) }, hurt = hq(1, 1) }
     local bunny = G().sprites.bunny
     self.bunnyImage = assets.image(bunny.image)
     local function bq(col, row) return assets.quad(self.bunnyImage, (col - 1) * 128, (row - 1) * 128, 128, 128) end
@@ -250,7 +250,7 @@ function Rhythm:judge(note, j, dt)
         audio.play("cool")
     end
     local moves = self.heroPoses.moves
-    self.heroPose = moves[(note.lane + self.combo) % #moves + 1]
+    self.heroPose = moves[note.lane] or moves[1] -- a punch to the side of the arrow
     self.bunnyPose = self.bunnyPoses[(note.lane + self.combo) % #self.bunnyPoses + 1]
     self.poseT = 0.25
 end

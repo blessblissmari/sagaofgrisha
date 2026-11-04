@@ -54,9 +54,9 @@ function Fishing:setup()
         self.bobQ[i] = assets.quad(self.bobberImage, (i % 2) * 24, math.floor(i / 2) * 24, 24, 24)
     end
     local sprites = G().sprites
-    local hero = sprites.hero_side
+    local hero = sprites[G().player.side or "grisha_side"] or sprites.grisha_side
     self.heroImage = assets.image(hero.image)
-    self.heroQ = assets.quad(self.heroImage, 16, 7 * 16, 16, 16)
+    self.heroQ = assets.quad(self.heroImage, 4 * 16, 16, 16, 16) -- Гриша looks right (td_hero row 2)
     self.goal = self.def.goal or 3
     self.barSize = self.def.bar or 0.3
     self.caught = {}

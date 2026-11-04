@@ -14,7 +14,9 @@
 -- opts: font, align ("left" / "center"), spacing, width, style ("plain" / "buttons"),
 --       color, selectedColor, disabledColor, shadow, cancel, onMove(index), index,
 --       visible (rows on the screen, the rest scrolls), columns (a grid: 2 = two
---       columns, items go row by row, left / right switch columns), columnGap
+--       columns, items go row by row, left / right switch columns), columnGap,
+--       maxWidth (the grid must fit: every column gets its own width, the gap
+--       shrinks, and when even that is too wide the menu becomes one column)
 
 local audio = require("engine.audio")
 local class = require("engine.class")
@@ -49,8 +51,11 @@ function Menu:init(items, opts)
         or math.floor(self.font:getHeight() * (theme.menuSpacing or 1.15)))
     self.width = opts.width
     self.visible = opts.visible -- show at most this many rows and scroll (arrows show more)
-    self.columns = math.max(1, opts.columns or 1)
-    self.columnGap = opts.columnGap or 44
+    self.wantColumns = math.max(1, opts.columns or 1)
+    self.columns = self.wantColumns
+    self.wantGap = opts.columnGap or 44
+    self.columnGap = self.wantGap
+    self.maxWidth = opts.maxWidth
     self.cursorScale = opts.cursorScale
     self.first = 1 -- the first row on the screen
     self.color = opts.color or theme.colors.ink
@@ -71,6 +76,7 @@ end
 function Menu:setItems(items, index)
     self.items = items
     self.index = index or 1
+    self:fit()
     if self.items[self.index] and not isEnabled(self.items[self.index]) then
         self:move(1, true)
     end
@@ -146,7 +152,38 @@ local function labelOf(item)
     return label
 end
 
-function Menu:columnWidth()
+-- maxWidth: give every column its own width, shrink the gap, or fall back to one column
+function Menu:fit()
+    self.columns, self.columnGap, self.colWidths = self.wantColumns, self.wantGap, nil
+    if not self.maxWidth or self.columns < 2 or self.width then
+        return
+    end
+    local widths, sum = {}, 0
+    for c = 1, self.columns do
+        widths[c] = 0
+    end
+    for i, item in ipairs(self.items) do
+        local c = (i - 1) % self.columns + 1
+        widths[c] = math.max(widths[c], self.font:getWidth(labelOf(item)))
+    end
+    for c = 1, self.columns do
+        sum = sum + widths[c]
+    end
+    local gaps = self.columns - 1
+    if sum + gaps * self.columnGap <= self.maxWidth then
+        self.colWidths = widths
+    elseif sum + gaps * 14 <= self.maxWidth then
+        self.colWidths = widths
+        self.columnGap = math.floor((self.maxWidth - sum) / gaps)
+    else
+        self.columns = 1
+    end
+end
+
+function Menu:columnWidth(col)
+    if self.colWidths and col then
+        return self.colWidths[col + 1]
+    end
     if self.width then
         return self.width
     end
@@ -157,7 +194,22 @@ function Menu:columnWidth()
     return w
 end
 
+-- x of a column (0 = the first) from the left edge of the menu
+function Menu:columnX(col)
+    if not self.colWidths then
+        return col * (self:columnWidth() + self.columnGap)
+    end
+    local x = 0
+    for c = 1, col do
+        x = x + self.colWidths[c] + self.columnGap
+    end
+    return x
+end
+
 function Menu:getWidth()
+    if self.colWidths then
+        return self:columnX(self.columns - 1) + self.colWidths[self.columns]
+    end
     local cw = self:columnWidth()
     return cw * self.columns + (self.columns - 1) * self.columnGap
 end
@@ -274,7 +326,7 @@ function Menu:draw(x, y)
     local font = self.font
     lg.setFont(font)
     local cols = self.columns
-    local width = self:columnWidth()
+    local uniform = self:columnWidth()
     local bob = math.floor(math.abs(math.sin(self.time * 5)) * 4 + 0.5)
     local px = theme.pixelOf(font)
     local shadowColor = theme.colors.shadow
@@ -296,7 +348,8 @@ function Menu:draw(x, y)
         local selected = i == self.index and self.active
         local enabled = isEnabled(item)
         local row, col = math.floor((i - 1) / cols), (i - 1) % cols
-        local ix = x + col * (width + self.columnGap)
+        local width = self.colWidths and self:columnWidth(col) or uniform
+        local ix = x + self:columnX(col)
         local iy = y + (row - firstRow + 1) * self.spacing
         local color = not enabled and self.disabledColor or (selected and self.selectedColor or self.color)
         if self.style == "buttons" then

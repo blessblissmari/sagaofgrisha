@@ -70,7 +70,7 @@ function Director:hostCommand(fn, ...)
 end
 
 function Director:continue(...)
-    self.runner:resume(...)
+    self.runner:continue(...)
 end
 
 -- dialogue -----------------------------------------------------------------------
@@ -115,7 +115,7 @@ end
 function Director:play(stage, opts)
     self.runner:hideBox()
     game().play(stage, opts, function(result)
-        self.runner:resume(result or {})
+        self.runner:continue(result or {})
     end)
     return yield()
 end

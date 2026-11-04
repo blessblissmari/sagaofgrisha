@@ -15,7 +15,7 @@ return {
         snore = true,
         battle = { hp = 30, attack = 6, defense = 3, speed = 8, skills = { "bite", "hop", "heal", "defend" },
             growth = { hp = 4, attack = 0.9, defense = 0.5, speed = 0.2 } },
-        unit = "bunnies",
+        unit = "kashka",
     },
     slime = {
         name = "Слизик", sprite = "slime", steps = "paws", scale = 1.5, sideScale = 0.9,

@@ -203,10 +203,7 @@ function Arcade:update(dt)
     end
     if self:pausePressed() and self.phase ~= "over" then
         input.consume("pause")
-        self:openPause({ { label = "Сдаться", action = function()
-            engine.scene.pop()
-            self:lose()
-        end } })
+        self:openPause(self:pauseItems())
         return
     end
     if self.phase == "title" then
@@ -244,6 +241,14 @@ end
 
 -- animations that go on behind the result card
 function Arcade:idle(dt) end
+
+-- extra items of the pause menu
+function Arcade:pauseItems()
+    return { { label = "Сдаться", action = function()
+        engine.scene.pop()
+        self:lose()
+    end } }
+end
 
 local function fmtTime(t)
     t = math.max(0, math.ceil(t))
@@ -287,23 +292,31 @@ end
 
 function Arcade:drawTitle()
     ui.dim(0.45)
-    local w, h = 600, 290
+    local w = 600
+    local font = ui.font("small")
+    local rules = self.def.rules or self.info.rules
+    local _, lines = font:getWrap(rules or "", w - 60)
+    local keys = self:keysLine()
+    local _, keyLines = font:getWrap(keys, w - 60)
+    local rec = G().records[self.recordName]
+    rec = rec and rec > 0 and rec
+    -- title, rules, goal, record, keys, "start": the card grows with the text
+    local h = math.max(290, 88 + #lines * 24 + 26 + (rec and 26 or 0) + 16 + #keyLines * 24 + 58)
     local x, y = self:drawCard(w, h)
     local cx = screen.width / 2
     ui.print(self.def.title or self.info.title, cx, y + 26, { font = "title", align = "center", color = "accent" })
-    local rules = self.def.rules or self.info.rules
-    local font = ui.font("small")
-    local _, lines = font:getWrap(rules or "", w - 60)
     for i, line in ipairs(lines) do
         ui.print(line, cx, y + 80 + (i - 1) * 24, { font = "small", align = "center", color = "ink" })
     end
     local gy = y + 88 + #lines * 24
     ui.print(self:goalText(), cx, gy, { font = "small", align = "center", color = "gold" })
-    local rec = G().records[self.recordName]
-    if rec and rec > 0 then
+    if rec then
         ui.print("Рекорд: " .. rec, cx, gy + 26, { font = "small", align = "center", color = "blue" })
     end
-    ui.print(self:keysLine(), cx, y + h - 74, { font = "small", align = "center", color = "faded" })
+    local ky = math.max(gy + (rec and 52 or 26) + 16, y + h - 58 - #keyLines * 24)
+    for i, line in ipairs(keyLines) do
+        ui.print(line, cx, ky + (i - 1) * 24, { font = "small", align = "center", color = "faded" })
+    end
     local blink = math.floor(self.time * 2) % 2 == 0
     ui.print("[" .. input.keyName("confirm") .. "] начать", cx, y + h - 42,
         { font = "pixel", align = "center", color = "light", alpha = blink and 1 or 0.45 })
@@ -393,7 +406,7 @@ function Arcade:draw()
         self:drawTitle()
     elseif self.phase == "over" then
         self:drawOver()
-    elseif self.playTime and self.playTime < 6 and self.info.keys and #self.info.keys > 0 then
+    elseif self.playTime and self.playTime < 6 and self.info.keys and #self.info.keys > 0 and self.info.keysHint ~= false then
         ui.print(self:keysLine(), screen.width / 2, screen.height - 24, { font = "small", align = "center",
             color = "light", alpha = 0.75 * math.min(1, 6 - self.playTime) })
     end

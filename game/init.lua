@@ -33,14 +33,14 @@ local game = {
     -- the hero at the start of a new game (story.lua can change it)
     player = {
         name = "Hero", hp = 6, maxHp = 6, slots = 24,
-        sprite = "grisha", side = "hero_side",
+        sprite = "grisha", side = "grisha_side", iso = "grisha_iso",
         items = {}, party = {}, abilities = {},
         equipment = {}, -- { weapon = "sword", body = "tunic" }: put on at the start
         -- battle stats at level 1; growth = added every level
         battle = { hp = 40, attack = 8, defense = 4, speed = 6,
             skills = { "attack", "smash", "skills", "item", "defend", "flee" },
             growth = { hp = 5, attack = 1.1, defense = 0.6, speed = 0.15 } },
-        unit = "heroes",
+        unit = "grisha",
     },
     sprites = require("game.data.sprites"),
     characters = require("game.data.characters"),

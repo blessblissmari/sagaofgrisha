@@ -253,7 +253,7 @@ iso.Hero = Hero
 
 function Hero:init(mode, x, y, spriteName)
     Actor.init(self, mode, x, y)
-    self.sprite = anim.new(G().sprite(spriteName or "iso_hero"))
+    self.sprite = anim.new(G().sprite(spriteName or G().player.iso or "grisha_iso"))
     self.speed = 58
     self.state = "move"
     self.aimX, self.aimY = 1, 0
@@ -469,7 +469,7 @@ function Hero:draw()
     love.graphics.setColor(1, 1, 1, 1)
     local sx, sy = self:screen()
     self:drawSprite(sx, sy)
-    if self.state == "attack" and self.weaponRow then
+    if self.state == "attack" and self.weaponRow and self.sprite.def.isoWeapons then
         local half = self.facing:sub(1, 1) == "s" and 0 or 1
         local frame = self.sprite:getFrame()
         love.graphics.setColor(1, 1, 1, self.alpha)

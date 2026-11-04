@@ -65,6 +65,24 @@ game.stage "menu" {
             { "Бой: ночь", play = "fight_night" },
             { "Тетрис", play = "tetris" },
         } },
+        -- все мини-игры: play = имя режима (game/modes/...) или этапа
+        { "Мини-игры", list = {
+            { "Тактика (как в «Героях»)", play = "tactics" },
+            { "Тетрис", play = "tetris" },
+            { "Слизняк", play = "snake" },
+            { "Кирпичики", play = "breakout" },
+            { "Самоцветы", play = "match3" },
+            { "Слизни-хлопушки", play = "puyo" },
+            { "Картина", play = "xonix" },
+            { "Парочки", play = "memory" },
+            { "Покер Кашки", play = "cards" },
+            { "Кости", play = "dice" },
+            { "Рыбалка", play = "fishing" },
+            { "Пляска", play = "rhythm" },
+            { "Звёздный патруль", play = "shmup" },
+            { "Взлом", play = "lockpick" },
+            { "Гонка", play = "racing" },
+        } },
     },
 }
 

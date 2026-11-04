@@ -29,11 +29,17 @@ end
 function Runner:enter()
     if not self.started then
         self.started = true
-        self:resume(unpack(self.args))
+        self:continue(unpack(self.args))
     end
 end
 
-function Runner:resume(...)
+-- the scene on top of the runner closed (a mini-game, a menu): nothing to do here, the
+-- director continues the script itself (Director:play passes the result). The name must
+-- not be used for the coroutine: scene.pop calls :resume() without arguments.
+function Runner:resume() end
+
+-- go on with the script; the arguments are what the waiting command returns
+function Runner:continue(...)
     if self.dead then
         return
     end
@@ -99,23 +105,23 @@ function Runner:update(dt)
         self.waitTime = self.waitTime - dt
         if self.waitTime <= 0 then
             self.waitTime = nil
-            self:resume()
+            self:continue()
         end
         return
     end
     if self.waitFn then
         if self.waitFn(dt) then
             self.waitFn = nil
-            self:resume()
+            self:continue()
         end
         return
     end
     if self.box.state ~= "hidden" and self.box.state ~= "idle" then
         local event, value = self.box:update(dt)
         if event == "done" then
-            self:resume()
+            self:continue()
         elseif event == "choice" then
-            self:resume(value)
+            self:continue(value)
         end
     end
 end

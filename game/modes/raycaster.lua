@@ -63,12 +63,35 @@ local HANDS = {
     front = { "assets/sprites/fp/fist_1_front.png", "assets/sprites/fp/fist_2_front.png", "assets/sprites/fp/fist_3_front.png" },
     open = "assets/sprites/fp/hand_open.png",
 }
--- where the handle goes into each fist frame (at the top of the fist). The icons have the
--- blade up-left; they are turned blade up. Items set grip = { x, y }: the point of their
--- 34x34 icon that sits there (on the handle, just under the guard).
+-- where the handle goes into each fist frame: the hollow between the thumb and the index
+-- finger (the front layer is everything of the hand below it, so the thumb and the fingers
+-- close over the handle). The icons have the blade up-left; they are turned blade up.
+-- Items set grip = { x, y }: the point of their 34x34 icon that sits there (on the handle,
+-- just under the guard). tools/fp_masks.py cuts the front layers along the same lines.
 local AUTOMAP = {}
-local GRIP = { { 64, 44 }, { 70, 28 }, { 82, 36 } }
+local GRIP = { { 71, 55 }, { 65, 46 }, { 75, 53 } }
 local UPRIGHT = math.pi / 4 - 0.4 -- icon blade up-left -> up, leaning a bit to the left
+
+-- The walls get mipmaps: far walls are smaller than their 64 px texture, and without the
+-- smaller copies the texture pixels jump from column to column while walking (the walls
+-- shimmer, as if loading, every time a big room comes into view). Power-of-two sheets only
+-- (WebGL 1); nil when the GPU says no.
+local mipmapCache = {}
+function Raycaster.mipmapped(path)
+    if mipmapCache[path] ~= nil then
+        return mipmapCache[path] or nil
+    end
+    local function pot(n) return n > 0 and 2 ^ math.floor(math.log(n) / math.log(2) + 0.5) == n end
+    local ok, image = pcall(love.graphics.newImage, path, { mipmaps = true })
+    if ok and image and pot(image:getWidth()) and pot(image:getHeight()) then
+        image:setFilter("nearest", "nearest")
+        pcall(image.setMipmapFilter, image, "linear")
+    else
+        image = false
+    end
+    mipmapCache[path] = image
+    return image or nil
+end
 
 function Raycaster:init(def)
     Mode.init(self, def)
@@ -83,7 +106,9 @@ function Raycaster:init(def)
     self.cols, self.rows = map.width, map.height
     self.tile = map.tilewidth
     local p = map.properties or {}
-    self.atlas = assets.image(def.textures or p.textures or "assets/sprites/walls/walls.png")
+    local texPath = def.textures or p.textures or "assets/sprites/walls/walls.png"
+    self.atlas = assets.image(texPath) -- the floor and the ceiling (shader) read this one
+    self.wallAtlas = Raycaster.mipmapped(texPath) or self.atlas
     self.ts = def.textureSize or p.textureSize or 64
     self.atlasCols = math.floor(self.atlas:getWidth() / self.ts)
     self.floorTex = def.floor or p.floor or 13
@@ -94,7 +119,7 @@ function Raycaster:init(def)
     self.lockedTex = def.lockedTexture or p.lockedTexture or 12
     self.battleStage = def.battle or "battle"
     self.quads = {}
-    self.batch = love.graphics.newSpriteBatch(self.atlas, self.W + 8, "stream")
+    self.batch = love.graphics.newSpriteBatch(self.wallAtlas, self.W * 2 + 8, "stream") -- walls + an opening door
     self.zbuf = {}
     self.white = love.graphics.newImage(love.image.newImageData(1, 1, "rgba8", string.char(255, 255, 255, 255)))
     self.spriteQuad = love.graphics.newQuad(0, 0, 1, 1, 1, 1)
@@ -901,6 +926,19 @@ function Raycaster:render()
     local fogDist = self.fogDist
     local opening = self.opening
     local seen, seeDist = self.visited, math.min(5, fogDist * 0.7)
+    -- distance -> texture column and height of one wall slice
+    local function slice(perp, side, rdx, rdy)
+        if perp < 0.0001 then
+            perp = 0.0001
+        end
+        local wallX = side == 0 and (posY + perp * rdy) or (posX + perp * rdx)
+        wallX = wallX - math.floor(wallX)
+        local texX = math.floor(wallX * ts)
+        if (side == 0 and rdx > 0) or (side == 1 and rdy < 0) then
+            texX = ts - 1 - texX
+        end
+        return perp, texX, H / perp
+    end
     for x = 0, W - 1 do
         local camX = 2 * x / W - 1
         local rdx, rdy = dirX + planeX * camX, dirY + planeY * camX
@@ -911,7 +949,7 @@ function Raycaster:render()
         if rdx < 0 then stepX, sideX = -1, (posX - mapX) * ddx else stepX, sideX = 1, (mapX + 1 - posX) * ddx end
         if rdy < 0 then stepY, sideY = -1, (posY - mapY) * ddy else stepY, sideY = 1, (mapY + 1 - posY) * ddy end
         local side, tex = 0, nil
-        local doorK = nil
+        local doorPerp, doorSide = nil, nil
         for _ = 1, 64 do
             if sideX < sideY then
                 sideX = sideX + ddx
@@ -930,37 +968,28 @@ function Raycaster:render()
             if tex then
                 break
             end
-            if opening and opening.x == mapX and opening.y == mapY then
-                tex = opening.tex
-                doorK = opening.k
-                break
+            if opening and not doorPerp and opening.x == mapX and opening.y == mapY then
+                -- the opening door: remember it and look further, the room behind it is
+                -- drawn first (no black gap under the rising door)
+                doorPerp, doorSide = side == 0 and (sideX - ddx) or (sideY - ddy), side
             end
         end
-        local perp = side == 0 and (sideX - ddx) or (sideY - ddy)
-        if perp < 0.0001 then
-            perp = 0.0001
-        end
-        local wallX = side == 0 and (posY + perp * rdy) or (posX + perp * rdx)
-        wallX = wallX - math.floor(wallX)
-        local texX = math.floor(wallX * ts)
-        if (side == 0 and rdx > 0) or (side == 1 and rdy < 0) then
-            texX = ts - 1 - texX
-        end
-        local lineH = H / perp
+        local perp, texX, lineH = slice(side == 0 and (sideX - ddx) or (sideY - ddy), side, rdx, rdy)
         local top = horizon - lineH / 2
-        local light = (side == 1 and 0.75 or 1) * self.flicker
-        local f = math.min(1, perp / fogDist)
-        batch:setColor(light, f, 0, 1)
-        if doorK then
-            -- the opening door slides up into the ceiling
-            local visible = 1 - doorK
+        batch:setColor((side == 1 and 0.75 or 1) * self.flicker, math.min(1, perp / fogDist), 0, 1)
+        batch:add(self:texQuad(tex or 0, texX), x, top, 0, 1, lineH / ts)
+        zbuf[x + 1] = perp
+        if doorPerp then
+            -- the door slides up into the ceiling
+            local dPerp, dTexX, dLineH = slice(doorPerp, doorSide, rdx, rdy)
+            local visible = 1 - opening.k
             if visible > 0 then
-                batch:add(self:texQuad(tex or 0, texX), x, top, 0, 1, lineH * visible / ts)
+                batch:setColor((doorSide == 1 and 0.75 or 1) * self.flicker, math.min(1, dPerp / fogDist), 0, 1)
+                batch:add(self:texQuad(opening.tex or 0, dTexX), x, horizon - dLineH / 2, 0, 1, dLineH * visible / ts)
             end
-            zbuf[x + 1] = visible > 0.5 and perp or 1e9
-        else
-            batch:add(self:texQuad(tex or 0, texX), x, top, 0, 1, lineH / ts)
-            zbuf[x + 1] = perp
+            if visible > 0.5 then
+                zbuf[x + 1] = dPerp
+            end
         end
     end
     local fogShader = shaders.get("ray_fog")
