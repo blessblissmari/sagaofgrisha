@@ -84,6 +84,14 @@ return {
             fast = { "lctrl", "rctrl" },    -- hold: everything twice as fast
         },
         -- visual novel
+        world = {                           -- the 3D world map
+            interact = { "f", "return", "space" }, -- enter a place, the boat, go ashore
+            run = { "lshift", "rshift" },
+            camLeft = { "q" },              -- turn the camera
+            camRight = { "e" },
+            view = { "v" },                 -- near / far view
+            map = { "m" },                  -- small map / big map / none
+        },
         novel = {
             skip = { "lctrl", "rctrl" },
             log = { "l" },                  -- what was said before

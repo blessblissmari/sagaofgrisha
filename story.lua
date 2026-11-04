@@ -82,6 +82,7 @@ game.stage "menu" {
             { "Подземелье (псевдо-3D)", go = "dungeon", transition = "iris" },
             { "Пещера (платформер)", go = "cave" },
             { "Луг (изометрия)", go = "meadow" },
+            { "Карта мира (3D)", go = "world" },
             { "Бой: день", play = "fight_day" },
             { "Бой: закат", play = "fight_sunset" },
             { "Бой: ночь", play = "fight_night" },
@@ -386,6 +387,30 @@ game.stage "meadow" {
 }
 
 -- =====================================================================================
+--  Карта мира в 3D (как в Final Fantasy VII-IX): маленькая круглая планета — уйдёшь за
+--  восточный край, придёшь с западного. Карта рисуется в Tiled (assets/maps/world.tmx,
+--  плитки assets/maps/world.tsx = земли из game/data/grounds.lua), здания — из
+--  game/data/prefabs.lua. [WASD] идти, [Shift] бежать, [Q/E] камера, [V] вид, [M] карта,
+--  [F] войти / сесть в лодку / сойти на берег. На опасных землях — случайные бои.
+-- =====================================================================================
+game.stage "world" {
+    kind = "world", map = "assets/maps/world.tmx", music = "calm",
+    battle = "fight_world",
+    -- земля (encounter в grounds.lua) -> кто там водится
+    encounters = {
+        plains = { "blob_blue", "slime" },
+        forest = { "frog", "beetle", "slime" },
+        hills = { "blob_red", "beetle" },
+        desert = { "crab", "beetle" },
+        snow = { "ghost", "blob_blue" },
+    },
+    triggers = {
+        island = { "island", spawn = "from_world" },
+        meadow = { "meadow", spawn = "from_world", transition = "iris" },
+    },
+}
+
+-- =====================================================================================
 --  Пошаговые бои. sky = небо-сфера вокруг поля (day, meadow, sunset, night, forest,
 --  snow, dungeon или своя таблица). [V] вид, [Q/E] поворот камеры.
 -- =====================================================================================
@@ -393,6 +418,7 @@ game.stage "fight_day" { kind = "battle", enemies = { "blob_blue", "slime", "fro
 game.stage "fight_sunset" { kind = "battle", enemies = { "slime", "frog" }, sky = "sunset" }
 game.stage "fight_night" { kind = "battle", enemies = { "blob_red", "blob_blue" }, sky = "night" }
 game.stage "fight_dungeon" { kind = "battle", enemies = { "blob_blue", "slime" }, sky = "dungeon" }
+game.stage "fight_world" { kind = "battle", enemies = { "slime" }, sky = "day" } -- враги и небо — от земли
 
 -- Мини-игра
 game.stage "tetris" { kind = "tetris", goal = 3 }

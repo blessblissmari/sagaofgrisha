@@ -158,6 +158,16 @@ return {
         },
     },
 
+    -- Кашка on the 3D world map: the same sheet made small (24 x 24 frames)
+    bunny_world = {
+        image = "assets/sprites/world/pet_small.png", frame = { 24, 24 }, origin = { 12, 22 }, default = "idle.down",
+        animations = {
+            walk = { right = { "1-3", 1, 0.12 }, up = { "1-3", 2, 0.12 }, down = { "1-3", 3, 0.12 }, left = { "1-3", 4, 0.12 } },
+            idle = { right = { 1, 1, 1 }, up = { 1, 2, 1 }, down = { 1, 3, 1 }, left = { 1, 4, 1 } },
+            sit = { "1-3", 5, 0.3, "pauseAtEnd" },
+        },
+    },
+
     -- blobs (top-down and side view at once)
     blob_red = {
         image = HEROES, frame = { 16, 16 }, origin = { 8, 16 }, scale = 2, facesLeft = true, default = "idle",

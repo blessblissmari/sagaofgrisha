@@ -22,6 +22,7 @@ extern number time;
 extern number useBand;
 extern Image band;          // the panorama band (full turn wide)
 extern vec2 bandLat;        // latitude of its bottom and top, radians
+extern number flipX;        // 1 = mirrored (for worlds with x to the east and z to the south)
 
 float hash(vec2 p)
 {
@@ -59,6 +60,7 @@ vec4 effect(vec4 vcolor, Image tex, vec2 uv, vec2 px)
     vec3 up = vec3(-sy * sp, cp, -cy * sp);
     float t = tan(fov * 0.5);
     vec2 ndc = vec2((px.x - screenSize.x * 0.5) / (screenSize.y * 0.5), (screenSize.y * 0.5 - px.y) / (screenSize.y * 0.5));
+    ndc.x *= 1.0 - 2.0 * flipX;
     vec3 dir = normalize(forward + right * ndc.x * t + up * ndc.y * t);
     vec3 col;
     if (dir.y >= 0.0) {

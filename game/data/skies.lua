@@ -30,6 +30,12 @@ return {
         top = "#5a7fc0", horizon = "#e8f2ff", ground = "#c8d4e0", groundHorizon = "#eef4fa",
         sun = { yaw = -1.0, pitch = 0.3, color = "#ffffff" }, clouds = 0.6, band = "snowy", bandRepeat = 7,
     },
+    -- the 3D world map (game/modes/world.lua): the ground colours are the haze over the
+    -- round edge of the world
+    world = {
+        top = "#3f7fd0", horizon = "#cfe4f2", ground = "#cfe4f2", groundHorizon = "#cfe4f2",
+        sun = { yaw = 2.6, pitch = 0.2, color = "#fff6d8" }, clouds = 0.55, grid = 0,
+    },
     dungeon = {
         top = "#07070b", horizon = "#2a2230", ground = "#141018", groundHorizon = "#2e2632",
         sun = false, stars = 0.15, clouds = 0, grid = 0.9,

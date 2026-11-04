@@ -63,6 +63,8 @@ local game = {
     sounds = require("game.data.sounds"),
     surfaces = require("game.data.surfaces"),
     effects = require("game.data.effects"),
+    grounds = require("game.data.grounds"),  -- the grounds of the 3D world map
+    prefabs = require("game.data.prefabs"),  -- its buildings (groups of 3D models)
     notes = {},  -- texts of letters / notes: items with read = "name" show game.notes[name]
     voices = {}, -- extra voices for characters (see engine/voice.lua)
     -- stage kind -> module with the gameplay
@@ -71,7 +73,7 @@ local game = {
         platformer = "game.modes.platformer", raycaster = "game.modes.raycaster",
         battle = "game.modes.battle", tactics = "game.modes.tactics", tetris = "game.modes.tetris",
         puyo = "game.modes.puyo", breakout = "game.modes.breakout", xonix = "game.modes.xonix",
-        cards = "game.modes.cards", iso = "game.modes.iso",
+        cards = "game.modes.cards", iso = "game.modes.iso", world = "game.modes.world",
         -- mini-games (all of them are built on game/modes/arcade.lua)
         snake = "game.modes.snake", match3 = "game.modes.match3", memory = "game.modes.memory",
         fishing = "game.modes.fishing", rhythm = "game.modes.rhythm", shmup = "game.modes.shmup",
@@ -427,7 +429,7 @@ function game.save()
         party = st.party, pets = st.pets, collected = st.collected, defeated = st.defeated,
         hero = st.hero, equipment = st.equipment, quests = st.quests,
         codex = st.codex, journal = st.journal, memory = st.memory, affinity = st.affinity,
-        choices = st.choices, talents = st.talents, chapter = st.chapter,
+        choices = st.choices, talents = st.talents, chapter = st.chapter, world = st.world,
     }
     save.write("savegame", data)
 end
@@ -508,7 +510,7 @@ function game.go(name, opts)
             game.state.stage, game.state.spawn = def.name, opts.spawn
         end
         scene.clear(game.create(def, opts))
-        if game.state and def.save ~= false and (def.kind == "topdown" or def.kind == "platformer" or def.kind == "raycaster") then
+        if game.state and def.save ~= false and (def.kind == "topdown" or def.kind == "platformer" or def.kind == "raycaster" or def.kind == "world") then
             game.save()
         end
     end, kind, opts)

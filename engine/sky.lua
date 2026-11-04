@@ -5,6 +5,7 @@
 --   local sky = Sky(def)            -- def from game/data/skies.lua or a table
 --   sky:update(dt)
 --   sky:draw(yaw, pitch, fov)       -- radians; pitch < 0 looks down
+--   sky:draw(yaw, pitch, fov, w, h, flip)  -- into a canvas of w x h; flip = mirrored
 --
 -- def fields (colors are { r, g, b } or "#rrggbb"):
 --   top, horizon            sky gradient            ground, groundHorizon   the ground
@@ -117,24 +118,27 @@ function Sky.focal(fov)
     return (screen.height / 2) / math.tan((fov or 1.05) / 2)
 end
 
-function Sky:draw(yaw, pitch, fov)
+function Sky:draw(yaw, pitch, fov, w, h, flip)
     local lg = love.graphics
     fov = fov or 1.05
+    w, h = w or screen.width, h or screen.height
     local sh = shaders.get("sky")
     if not sh then
         -- no shaders: a plain gradient with the horizon at the right height
-        local f = Sky.focal(fov)
-        local hy = screen.height / 2 + math.tan(pitch) * f
+        local f = (h / 2) / math.tan(fov / 2)
+        local hy = h / 2 + math.tan(pitch) * f
+        local band = h / 9
         lg.setColor(self.top)
-        lg.rectangle("fill", 0, 0, screen.width, screen.height)
+        lg.rectangle("fill", 0, 0, w, h)
         lg.setColor(self.horizon)
-        lg.rectangle("fill", 0, hy - 60, screen.width, 60)
+        lg.rectangle("fill", 0, hy - band, w, band)
         lg.setColor(self.groundHorizon)
-        lg.rectangle("fill", 0, hy, screen.width, screen.height)
+        lg.rectangle("fill", 0, hy, w, h)
         lg.setColor(1, 1, 1, 1)
         return
     end
-    shaders.send(sh, "screenSize", { screen.width, screen.height })
+    shaders.send(sh, "screenSize", { w, h })
+    shaders.send(sh, "flipX", flip and 1 or 0)
     shaders.send(sh, "yaw", yaw)
     shaders.send(sh, "pitch", pitch)
     shaders.send(sh, "fov", fov)
@@ -156,7 +160,7 @@ function Sky:draw(yaw, pitch, fov)
     end
     lg.setShader(sh)
     lg.setColor(1, 1, 1, 1)
-    lg.draw(self.white, 0, 0, 0, screen.width, screen.height)
+    lg.draw(self.white, 0, 0, 0, w, h)
     lg.setShader()
 end
 

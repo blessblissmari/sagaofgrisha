@@ -5,13 +5,14 @@
 --              or without directions) and "idle"
 --   scale      size in the top-down world and battles (default: the sprite's own)
 --   sideScale  size in side view (platformer), default 1
+--   worldSprite  sprite on the 3D world map (default: sprite), worldScale = its size
 --   steps      footstep sound folder (assets/audio/steps)
 --   battle     stats + skills for the turn-based battle
 --   unit       stats for the tactics battle (see game/data/units.lua)
 
 return {
     bunny = {
-        name = "Кашка", sprite = "bunny", steps = "paws", character = "bunny", sideScale = 0.11, isoScale = 0.14,
+        name = "Кашка", sprite = "bunny", worldSprite = "bunny_world", worldScale = 0.8, steps = "paws", character = "bunny", sideScale = 0.11, isoScale = 0.14,
         snore = true,
         battle = { hp = 30, attack = 6, defense = 3, speed = 8, skills = { "bite", "hop", "heal", "defend" },
             growth = { hp = 4, attack = 0.9, defense = 0.5, speed = 0.2 } },
