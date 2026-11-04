@@ -86,7 +86,7 @@ function Layer:play(name, x, y, opts)
     opts = opts or {}
     local item = {
         def = def, sheet = sheetOf(def), x = x, y = y, t = 0,
-        scale = opts.scale or 1, color = opts.color, rotation = opts.rotation or 0,
+        scale = (opts.scale or 1) * (def.scale or 1), color = opts.color, rotation = opts.rotation or 0,
         fps = (def.fps or 40) * (opts.speed or 1), follow = opts.follow,
     }
     table.insert(self.sprites, item)

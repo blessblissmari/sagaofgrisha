@@ -1,5 +1,5 @@
 -- Memory (pairs): flip two cards, keep them if the pictures match.
--- Cards: "Playing Cards Pack" by Kenney (CC0), pictures: item icons ("496 pixel art icons", CC0).
+-- Cards: "Asset Pack Pixel Poker" by Chasersgaming (CC0), pictures: item icons ("496 pixel art icons", CC0).
 --
 --   game.stage "tavern_pairs" { kind = "memory", pairs = 8, mistakes = 6 }
 --   local r = s:play("memory", { pairs = 6, time = 60 })       -- r.win, r.score, r.mistakes
@@ -31,7 +31,7 @@ Memory.defaultLives = 0
 
 local ICONS = { "carrot", "coin", "sword", "potion", "mushroom", "clover", "key", "fish", "ring", "book", "hat",
     "boots", "axe", "bread", "torch", "map", "helmet", "letter" }
-local CW, CH = 42, 60       -- the card inside its 64x64 picture
+local CW, CH = 34, 50       -- the pixel card inside its 64x64 picture
 
 function Memory:setup()
     self.back = assets.image("assets/sprites/cards/back.png")
@@ -56,7 +56,7 @@ function Memory:setup()
     local n = #deck
     -- the biggest cards that fit, full rows if possible
     local best
-    for _, scale in ipairs({ 2, 1.75, 1.5, 1.25, 1 }) do
+    for _, scale in ipairs({ 3, 2, 1.5, 1 }) do      -- whole pixels first
         for cols = math.min(n, 10), 2, -1 do
             local rows = math.ceil(n / cols)
             local w, h = cols * (CW * scale + 14), rows * (CH * scale + 12)
@@ -203,13 +203,14 @@ function Memory:drawGame()
             local showFace = f > 0.5
             local lift = (i == self.cursor and self.phase == "play") and -6 or 0
             lg.setColor(0, 0, 0, 0.3)
-            lg.rectangle("fill", x - CW * sx / 2 + 4, y - CH * SCALE / 2 + 6, CW * sx, CH * SCALE, 6)
+            lg.rectangle("fill", x - CW * sx / 2 + 4, y - CH * SCALE / 2 + 6, CW * sx, CH * SCALE, 4)
             lg.setColor(1, 1, 1, c.found and 0.85 or 1)
             lg.draw(showFace and self.face or self.back, x, y + lift, 0, sx, SCALE, 32, 32)
             if showFace then
                 lg.setColor(1, 1, 1, 1)
                 local img = assets.image("assets/sprites/icons/" .. c.icon .. ".png")
-                lg.draw(img, x, y + lift, 0, sx / SCALE * 0.8 * SCALE, 0.8 * SCALE, 17, 17)
+                local k = SCALE >= 3 and 2 or (SCALE >= 2 and 1.5 or 1)
+                lg.draw(img, x, y + lift, 0, sx / SCALE * k, k, 17, 17)
             end
             if c.glow and c.glow > 0 then
                 lg.setBlendMode("add")

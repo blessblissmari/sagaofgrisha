@@ -1,13 +1,14 @@
 -- Dice like in Kingdom Come: Deliverance (Farkle). Throw six dice, put aside the ones that score,
 -- then throw the rest again or write the points down. A throw without points burns the turn.
--- Dice: "Boardgame Pack" by Kenney (CC0); the faces of the players: old paintings from the
--- Public Domain Pack by Drummyfish (CC0).
+-- Dice: "32x32 pixel d6 dice roll & results" by adhochero (CC0); the faces of the players:
+-- "RPG portraits" by Buch (CC0).
 --
 --   game.stage "tavern_dice" { kind = "dice", goal = 2000, opponent = "monk", prize = { coin = 10 } }
 --   local r = s:play("dice", { goal = 1500, opponent = "old" })    -- r.win, r.score, r.enemyScore
 --
 --   goal      points to win (default 1500 + 500 x level)
---   opponent  "monk", "old", "noble" or your own { name = "...", portrait = "path", risk = 0..1 }
+--   opponent  "monk", "old", "noble" or your own { name = "...", portrait = "path" or { image, x, y, w, h },
+--             risk = 0..1 }
 -- Points: 1 = 100, 5 = 50, three of a kind = face x 100 (three 1s = 1000), every extra die of the
 -- kind doubles it; 1-2-3-4-5 = 500, 2-3-4-5-6 = 750, 1..6 = 1500.
 -- Keys: [←][→] choose, [Space] take a die, [Enter] throw again, [X] write the points down.
@@ -35,14 +36,17 @@ Dice.info = {
 }
 Dice.defaultLives = 0
 
+local PORTRAITS = "assets/sprites/portraits/rpg_portraits.png"   -- 9 x 3 faces of 32x32
+local function face(col, row) return { image = PORTRAITS, x = 4 + col * 36, y = 4 + row * 36, w = 32, h = 32 } end
+
 local OPPONENTS = {
-    monk = { name = "Брат Фома", portrait = "assets/sprites/portraits/portrait2.jpg", risk = 0.3,
+    monk = { name = "Брат Фома", portrait = face(4, 1), risk = 0.3,
         bust = { "Господь испытывает...", "Пусто. Бывает." }, big = { "Благодать!", "Вот это бросок." },
         win = { "Помолюсь за тебя." }, lose = { "Ты везучий, отрок." } },
-    old = { name = "Дед Архип", portrait = "assets/sprites/portraits/portrait5.jpg", risk = 0.15,
+    old = { name = "Дед Архип", portrait = face(2, 0), risk = 0.15,
         bust = { "Эх, старые руки...", "Тьфу ты!" }, big = { "Хе-хе, учись!", "Вот так-то." },
         win = { "Молод ещё со мной тягаться." }, lose = { "Ну уважил старика." } },
-    noble = { name = "Пан Казимир", portrait = "assets/sprites/portraits/portrait7.jpg", risk = 0.6,
+    noble = { name = "Пан Казимир", portrait = face(8, 0), risk = 0.6,
         bust = { "Кости кривые!", "Это случайность." }, big = { "Ха! Видал?", "Учись у пана." },
         win = { "Деньги на стол, холоп." }, lose = { "Ты жульничал!" } },
 }
@@ -107,15 +111,24 @@ local function bestPick(vals)
 end
 
 function Dice:setup()
-    self.sheet = assets.image("assets/sprites/arcade/dice.png")
-    self.faces = { white = {}, red = {} }
+    -- the faces: a straight and a turned picture of every face; 10 frames of a tumbling die
+    self.sheet = assets.image("assets/sprites/arcade/dice_faces.png")
+    self.rollSheet = assets.image("assets/sprites/arcade/dice_roll.png")
+    self.faces = { straight = {}, turned = {} }
     for f = 1, 6 do
-        self.faces.white[f] = assets.quad(self.sheet, (f - 1) * 64, 0, 64, 64)
-        self.faces.red[f] = assets.quad(self.sheet, (f - 1) * 64, 64, 64, 64)
+        self.faces.turned[f] = assets.quad(self.sheet, 0, (f - 1) * 32, 32, 32)
+        self.faces.straight[f] = assets.quad(self.sheet, 32, (f - 1) * 32, 32, 32)
     end
+    self.rolling = {}
+    for i = 0, 9 do self.rolling[i + 1] = assets.quad(self.rollSheet, (i % 2) * 32, math.floor(i / 2) * 32, 32, 32) end
     local op = self.def.opponent or "monk"
     self.opp = type(op) == "table" and op or OPPONENTS[op] or OPPONENTS.monk
-    self.portrait = assets.image(self.opp.portrait or OPPONENTS.monk.portrait)
+    local pic = self.opp.portrait or OPPONENTS.monk.portrait
+    if type(pic) == "string" then pic = { image = pic } end
+    self.portrait = assets.image(pic.image)
+    local pw, ph = self.portrait:getDimensions()
+    self.portraitQuad = assets.quad(self.portrait, pic.x or 0, pic.y or 0, pic.w or pw, pic.h or ph)
+    self.portraitSize = { pic.w or pw, pic.h or ph }
     self.heroName = "Гриша"
     self.goal = self.def.goal or (1500 + 500 * self.level)
     self.totals = { 0, 0 }
@@ -175,7 +188,7 @@ function Dice:throw(n)
         end
         table.insert(placed, { x, y })
         table.insert(self.dice, { value = love.math.random(6), x = TRAY.x - 80, y = TRAY.y + TRAY.h / 2 + (i - 3.5) * 20,
-            tx = x, ty = y, rot = love.math.random() * 6, spin = (love.math.random() - 0.5) * 20, t = 0, show = 1 })
+            tx = x, ty = y, rot = 0, spin = 0, t = 0, show = 1, seed = love.math.random(10), turned = love.math.random() < 0.4 })
     end
     table.sort(self.dice, function(a, b) return a.tx < b.tx end)
     self.rollT = 0.75
@@ -298,11 +311,12 @@ function Dice:step(dt)
         d.x = d.x + (d.tx - d.x) * math.min(1, dt * 8)
         d.y = d.y + (d.ty - d.y) * math.min(1, dt * 8)
         d.rot = d.rot + d.spin * dt * (1 - e)
-        if k < 1 and math.floor(d.t * 16) ~= math.floor((d.t - dt) * 16) then d.show = love.math.random(6) end
+        d.tumble = k < 1 and (math.floor(d.t * 18 + d.seed) % 10 + 1) or nil
         if k >= 1 then d.show = d.value end
     end
     for i, d in ipairs(self.kept) do
-        local tx, ty = 760 + ((i - 1) % 3) * 56, 190 + math.floor((i - 1) / 3) * 56
+        local tx, ty = 760 + ((i - 1) % 3) * 66, 190 + math.floor((i - 1) / 3) * 66
+        d.turned = false
         d.x = d.x + (tx - d.x) * math.min(1, dt * 10)
         d.y = d.y + (ty - d.y) * math.min(1, dt * 10)
         d.rot = d.rot * (1 - math.min(1, dt * 10))
@@ -338,13 +352,17 @@ function Dice:step(dt)
     elseif input.pressed("bank") then self:bankPoints() end
 end
 
+-- pixel dice are never turned by code: a rolling die shows the tumbling frames,
+-- a lying one its straight or its turned picture; the opponent's dice are reddish
 function Dice:drawDie(d, color, alpha)
     local lg = love.graphics
-    local s = (d.picked and 1.08 or 1) * 0.9
+    local image, quad = self.sheet, self.faces[d.turned and "turned" or "straight"][d.show or d.value]
+    if d.tumble then image, quad = self.rollSheet, self.rolling[d.tumble] end
+    local x, y = math.floor(d.x + 0.5), math.floor(d.y + 0.5) - (d.picked and 8 or 0)
     lg.setColor(0, 0, 0, 0.35 * (alpha or 1))
-    lg.draw(self.sheet, self.faces[color][d.show or d.value], d.x + 5, d.y + 6, d.rot, s, s, 32, 32)
-    lg.setColor(1, 1, 1, alpha or 1)
-    lg.draw(self.sheet, self.faces[color][d.show or d.value], d.x, d.y - (d.picked and 6 or 0), d.rot, s, s, 32, 32)
+    lg.draw(image, quad, x + 4, y + 6 + (d.picked and 8 or 0), 0, 2, 2, 16, 16)
+    if color == "red" then lg.setColor(1, 0.62, 0.55, alpha or 1) else lg.setColor(1, 1, 1, alpha or 1) end
+    lg.draw(image, quad, x, y, 0, 2, 2, 16, 16)
 end
 
 function Dice:drawGame()
@@ -367,7 +385,12 @@ function Dice:drawGame()
     lg.setColor(0.12, 0.07, 0.03, 1)
     lg.rectangle("fill", 24, 40, 170, 158, 6)
     lg.setColor(1, 1, 1, 1)
-    lg.draw(self.portrait, 32, 48, 0, 154 / self.portrait:getWidth(), 142 / self.portrait:getHeight())
+    lg.setColor(0.1, 0.07, 0.14, 1)
+    lg.rectangle("fill", 32, 48, 154, 142)
+    lg.setColor(1, 1, 1, 1)
+    local pk = math.max(1, math.floor(math.min(154 / self.portraitSize[1], 142 / self.portraitSize[2])))
+    lg.draw(self.portrait, self.portraitQuad, 32 + math.floor((154 - self.portraitSize[1] * pk) / 2),
+        48 + math.floor((142 - self.portraitSize[2] * pk) / 2), 0, pk, pk)
     lg.setColor(0.75, 0.6, 0.3, 1)
     lg.setLineWidth(3)
     lg.rectangle("line", 30, 46, 158, 146, 3)

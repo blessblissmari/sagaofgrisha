@@ -1,8 +1,7 @@
 -- Rhythm game like Dance Dance Revolution: arrows fly up to the targets at the top, press the
 -- key when an arrow covers its target. The notes follow the real beats of the track:
 -- game/data/charts/<music>.lua (made by tools/rhythm_chart.py; without a chart - every beat).
--- Arrows: "Mouse buttons & arrow keys" by qubodup (CC0); dancers: GrafxKid "Classic hero" (CC0)
--- and the bunny of the game.
+-- Arrows: the pixel arrows of the interface; dancers: Гриша (td_hero) and the bunny of the game.
 --
 --   game.stage "dance" { kind = "rhythm", goal = 70, time = 60, level = 3 }
 --   local r = s:play("rhythm", { level = 1 })   -- r.win, r.score, r.accuracy, r.maxCombo, r.grade
@@ -42,7 +41,6 @@ Rhythm.info = {
 Rhythm.defaultLives = 0
 
 local LANES = { "laneLeft", "laneDown", "laneUp", "laneRight" }
-local ARROW = { { 0, 220 }, { 34, 220 }, { 34, 186 }, { 68, 220 } } -- white keys; green ones are 102 px to the right
 local TARGET_Y = 92
 local LANE_W = 78
 local JUDGE = {
@@ -127,11 +125,10 @@ local function buildNotes(chart, info, level, from, to, seed)
 end
 
 function Rhythm:setup()
-    self.arrows = assets.image("assets/sprites/arcade/arrows.png")
-    self.white, self.green = {}, {}
-    for k, xy in ipairs(ARROW) do
-        self.white[k] = assets.quad(self.arrows, xy[1], xy[2], 32, 32)
-        self.green[k] = assets.quad(self.arrows, xy[1] + 102, xy[2], 32, 32)
+    -- the arrows of the interface (white pixel arrows), tinted by code
+    self.arrowImg = {}
+    for k, dir in ipairs({ "left", "down", "up", "right" }) do
+        self.arrowImg[k] = assets.image("assets/sprites/ui/arrow_" .. dir .. ".png")
     end
     local hero = G().sprites.grisha_side -- Гриша (td_hero): steps in place, punches to the arrows
     self.heroImage = assets.image(hero.image)
@@ -382,16 +379,18 @@ function Rhythm:drawGame()
     for k = 1, 4 do
         local x = self:laneX(k)
         local s = 2 * (1 + 0.08 * pulse) * (1 - self.pressedT[k] * 0.1)
+        local img = self.arrowImg[k]
+        local ox, oy = img:getWidth() / 2, img:getHeight() / 2
         lg.setColor(1, 1, 1, 0.35 + 0.2 * pulse)
-        lg.draw(self.arrows, self.white[k], x, TARGET_Y, 0, s, s, 16, 16)
+        lg.draw(img, x, TARGET_Y, 0, s, s, ox, oy)
         if self.pressedT[k] > 0 then
-            lg.setColor(1, 1, 1, 0.5)
-            lg.draw(self.arrows, self.green[k], x, TARGET_Y, 0, s, s, 16, 16)
+            lg.setColor(0.45, 1, 0.45, 0.6)
+            lg.draw(img, x, TARGET_Y, 0, s, s, ox, oy)
         end
         if self.flashes[k] > 0 then
             local f = self.flashes[k]
-            lg.setColor(1, 1, 1, f)
-            lg.draw(self.arrows, self.green[k], x, TARGET_Y, 0, 2 + (1 - f) * 0.8, 2 + (1 - f) * 0.8, 16, 16)
+            lg.setColor(0.5, 1, 0.5, f)
+            lg.draw(img, x, TARGET_Y, 0, 2 + (1 - f) * 0.8, 2 + (1 - f) * 0.8, ox, oy)
         end
     end
     -- the notes
@@ -403,7 +402,8 @@ function Rhythm:drawGame()
             local x = self:laneX(n.lane)
             local c = n.color
             lg.setColor(c[1], c[2], c[3], 1)
-            lg.draw(self.arrows, self.white[n.lane], x, y, 0, 2, 2, 16, 16)
+            local img = self.arrowImg[n.lane]
+            lg.draw(img, math.floor(x), math.floor(y), 0, 2, 2, img:getWidth() / 2, img:getHeight() / 2)
             if n.jump then
                 lg.setColor(1, 1, 1, 0.6)
                 lg.rectangle("line", x - 34, y - 34, 68, 68, 10)

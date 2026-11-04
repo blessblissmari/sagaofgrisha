@@ -1,12 +1,11 @@
 -- Xonix: cut pieces off the sea to uncover a picture.
--- Picture: Hendrik Voogd "Italian landscape with Umbrella Pines" (1807) from the Public Domain Pack
--- by Drummyfish (CC0); slimes: "Puyo Puyo Blobs" by marie_iskandar (CC0); the ball: "Breakout set" by Buch (CC0).
+-- Picture: "Mountain at Dusk Background" by ansimuz (CC0, its layers put together); slimes: "Puyo Puyo Blobs" by marie_iskandar (CC0); the ball: "Breakout set" by Buch (CC0).
 --
---   game.stage "painting" { kind = "xonix", goal = 75, picture = "assets/sprites/arcade/picture_pines.jpg" }
+--   game.stage "painting" { kind = "xonix", goal = 75, picture = "assets/sprites/arcade/picture_mountains.png" }
 --   local r = s:play("xonix", { goal = 60, enemies = 2 })     -- r.win, r.score, r.percent
 --
 --   goal      percent of the field to take (default 70)
---   picture   the image that is uncovered (800 x 448 fits exactly)
+--   picture   the image that is uncovered (stretched over the field; 272 x 160 pixel art fits well)
 --   enemies   slimes in the sea (default 1 + level)
 --   hunters   slimes that walk on the land (default 0, 1 from level 3)
 -- Keys: arrows. On the land you can stop, in the sea you can't: get back to the land
@@ -37,7 +36,7 @@ local SEA, LAND, TRAIL = 0, 1, 2
 local DIRS = { up = { 0, -1 }, down = { 0, 1 }, left = { -1, 0 }, right = { 1, 0 } }
 
 function Xonix:setup()
-    self.picture = assets.image(self.def.picture or "assets/sprites/arcade/picture_pines.jpg")
+    self.picture = assets.image(self.def.picture or "assets/sprites/arcade/picture_mountains.png")
     self.puyo = assets.image("assets/sprites/arcade/puyo.png")
     self.breakout = assets.image("assets/sprites/arcade/breakout.png")
     self.ballQ = assets.quad(self.breakout, 84, 136, 8, 8)

@@ -1,5 +1,5 @@
--- Fish for the fishing mini-game (game/modes/fishing.lua). Pictures: the Public Domain Pack
--- by Drummyfish (CC0), old engravings of fish (1754-1842), cells of assets/sprites/arcade/fish.png.
+-- Fish for the fishing mini-game (game/modes/fishing.lua). Pictures: pixel fish of "Sea World Pack"
+-- by avodhel (CC0), 32x32 cells of assets/sprites/arcade/fish.png (5 in a row, all look right).
 --   cell        number of the picture (1..17)
 --   difficulty  how fast it moves in the bar (0..100)
 --   behavior    "mixed", "smooth", "dart" (sudden jumps), "sinker" (likes the bottom), "floater" (the top)

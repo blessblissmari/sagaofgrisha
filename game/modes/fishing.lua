@@ -1,6 +1,6 @@
 -- Fishing like in Stardew Valley: cast, wait for a bite, hook it and keep the fish inside
--- the green bar until the catch meter is full. Fish: game/data/fish.lua (old engravings from
--- the Public Domain Pack by Drummyfish, CC0); the float: "Fishing Bobbles" by Nelson Yiap
+-- the green bar until the catch meter is full. Fish: game/data/fish.lua (pixel fish from
+-- "Sea World Pack" by avodhel, CC0); the float: "Fishing Bobbles" by Nelson Yiap
 -- (HappyGo Games, CC-BY 4.0).
 --
 --   game.stage "pier" { kind = "fishing", goal = 3, time = 120 }
@@ -46,7 +46,7 @@ function Fishing:setup()
     self.atlas = assets.image("assets/sprites/arcade/fish.png")
     self.fishQ = {}
     for i = 1, 17 do
-        self.fishQ[i] = assets.quad(self.atlas, ((i - 1) % 5) * 160, math.floor((i - 1) / 5) * 96, 160, 96)
+        self.fishQ[i] = assets.quad(self.atlas, ((i - 1) % 5) * 32, math.floor((i - 1) / 5) * 32, 32, 32)
     end
     self.bobberImage = assets.image("assets/sprites/arcade/bobber.png")
     self.bobQ = {}
@@ -337,7 +337,9 @@ function Fishing:drawCatch()
     local lg = love.graphics
     local k = math.min(1, self.showT * 3)
     lg.setColor(1, 1, 1, 1)
-    lg.draw(self.atlas, self.fishQ[s.fish.cell], cx, y + 130, math.sin(self.time * 2) * 0.05, 1.6 * k, 1.6 * k, 80, 48)
+    local fk = k < 1 and 5 * k or 5
+    lg.draw(self.atlas, self.fishQ[s.fish.cell], math.floor(cx), math.floor(y + 130 + math.sin(self.time * 3) * 4), 0, fk, fk,
+        16, 16)
     if s.perfect then
         ui.print("Идеально!", cx, y + 46, { font = "small", align = "center", color = "green" })
     end

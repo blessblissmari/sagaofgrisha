@@ -1,6 +1,7 @@
 -- Side-scrolling shoot'em up (Gradius / Touhou style): waves of ships and rocks, power-ups,
 -- grazing bullets for points, bombs that clear the screen, and a boss at the end.
--- Sprites: "Space Shooter Redux" by Kenney (CC0); explosions: "Explosion Sheet" by StumpyStrust (CC0).
+-- Pixel art by ansimuz (CC0): "Warped Space Shooter" (the ship, red fighters, rocks, shots, explosions, space)
+-- and "Space Ship Shooter Pixel Art Assets" (pink drones, big ships, enemy bullets, power-up capsules).
 --
 --   game.stage "space" { kind = "shmup", level = 2, prize = { coin = 10 } }
 --   local r = s:play("shmup", { boss = false, time = 45 })   -- r.win, r.score, r.graze
@@ -25,8 +26,8 @@ local Arcade = require("game.modes.arcade")
 local Shmup = class(Arcade)
 Shmup.info = {
     title = "Звёздный патруль",
-    rules = "Стреляй и уворачивайся. Молния — сильнее пушка, щит — один удар не страшен, звезда — бомба. "
-        .. "Пули, пролетевшие впритирку, дают очки. В конце — босс.",
+    rules = "Стреляй и уворачивайся. Капсула P — сильнее пушка, S — щит (один удар не страшен), B — бомба, "
+        .. "сердце — жизнь. Пули, пролетевшие впритирку, дают очки. В конце — босс.",
     keys = { { "up", "лететь", "[←↑→↓]" }, { "fire", "огонь" }, { "focus", "точно" }, { "action", "бомба" } },
     background = "black",
     dim = 0,
@@ -35,17 +36,27 @@ Shmup.info = {
 local DIR = "assets/sprites/shmup/"
 local PI2 = math.pi / 2
 
--- enemy kinds: sprite, hit points, radius, score, scale
+-- enemy kinds: sprite sheet, hit points, radius, score, pixel scale.
+-- sheet: image + frame size; face = where the picture looks (pi/2 = down, pi = left); fps = animation
+local SHEETS = {
+    small = { file = "enemy_small", w = 16, h = 16, face = PI2, fps = 8 },
+    medium = { file = "enemy_medium", w = 32, h = 16, face = PI2, fps = 8 },
+    big = { file = "enemy_big", w = 32, h = 32, face = PI2, fps = 6 },
+    fighter = { file = "enemy_warped", w = 29, h = 29, face = math.pi, fps = 0 },
+    roller = { file = "enemy_warped", w = 29, h = 29, face = math.pi, fps = 12 },
+    asteroid = { file = "asteroid", w = 35, h = 37, face = 0, fps = 0 },
+    pebble = { file = "asteroid_small", w = 14, h = 13, face = 0, fps = 0 },
+}
 local KINDS = {
-    drone = { image = "enemyBlue2", hp = 2, r = 20, score = 100, scale = 0.45 },
-    diver = { image = "enemyGreen3", hp = 3, r = 20, score = 150, scale = 0.45 },
-    gunner = { image = "enemyBlack1", hp = 7, r = 22, score = 300, scale = 0.5, drop = "power" },
-    spinner = { image = "enemyRed4", hp = 10, r = 22, score = 400, scale = 0.5 },
-    heavy = { image = "enemyBlack5", hp = 18, r = 26, score = 700, scale = 0.6, drop = "bomb" },
-    rock = { image = "meteorBrown_big1", hp = 6, r = 32, score = 120, scale = 0.7, rock = 2 },
-    rock_med = { image = "meteorBrown_med1", hp = 3, r = 16, score = 60, scale = 0.8, rock = 1 },
-    rock_small = { image = "meteorBrown_small1", hp = 1, r = 10, score = 30, scale = 0.8, rock = 0 },
-    boss = { image = "ufoRed", hp = 260, r = 62, score = 5000, scale = 1.5 },
+    drone = { sheet = "small", hp = 2, r = 20, score = 100, scale = 3 },
+    diver = { sheet = "medium", hp = 3, r = 20, score = 150, scale = 2 },
+    gunner = { sheet = "fighter", hp = 7, r = 22, score = 300, scale = 2, drop = "power" },
+    spinner = { sheet = "roller", hp = 10, r = 22, score = 400, scale = 2, tint = { 0.85, 0.75, 1 } },
+    heavy = { sheet = "big", hp = 18, r = 26, score = 700, scale = 3, drop = "bomb" },
+    rock = { sheet = "asteroid", hp = 6, r = 32, score = 120, scale = 2, rock = 2 },
+    rock_med = { sheet = "asteroid", hp = 3, r = 16, score = 60, scale = 1, rock = 1 },
+    rock_small = { sheet = "pebble", hp = 1, r = 10, score = 30, scale = 2, rock = 0 },
+    boss = { sheet = "big", hp = 260, r = 62, score = 5000, scale = 5 },
 }
 
 -- the default flight: t = second, then what comes. y in 0..1 of the screen height.
@@ -71,23 +82,44 @@ local WAVES = {
     { t = 58, kind = "boss" },
 }
 
+-- capsules: row of "power_up.png" (2 frames 16x16 each); life is the heart of the interface
 local DROPS = {
-    power = { image = "powerupBlue_bolt", text = "Сильнее!" },
-    shield = { image = "powerupGreen_shield", text = "Щит" },
-    bomb = { image = "powerupRed_star", text = "+1 бомба" },
-    life = { image = "pill_red", text = "+1 жизнь" },
+    power = { row = 0, text = "Сильнее!", letter = "P" },
+    shield = { row = 1, text = "Щит", letter = "S" },
+    bomb = { row = 0, text = "+1 бомба", letter = "B", tint = { 1, 0.75, 0.45 } },
+    life = { heart = true, text = "+1 жизнь" },
 }
+
+local function strip(image, w, h, y, count)
+    local quads = {}
+    for i = 0, (count or math.floor(image:getWidth() / w)) - 1 do
+        quads[#quads + 1] = love.graphics.newQuad(i * w, y or 0, w, h, image:getDimensions())
+    end
+    return quads
+end
 
 function Shmup:setup()
     self.img = {}
-    for _, name in ipairs({ "playerShip1_blue", "fire08", "fire09", "laserBlue01", "laserGreen11", "laserRed08", "laserRed01",
-        "shield1", "star1", "star2", "star3", "bg_purple" }) do
+    for _, name in ipairs({ "player", "shot1", "shot2", "flash", "hit", "laser_bolts", "power_up", "bg_back", "bg_stars",
+        "bg_planet" }) do
         self.img[name] = assets.image(DIR .. name .. ".png")
     end
-    for _, k in pairs(KINDS) do self.img[k.image] = assets.image(DIR .. k.image .. ".png") end
-    for _, d in pairs(DROPS) do self.img[d.image] = assets.image(DIR .. d.image .. ".png") end
-    self.img.bg_purple:setWrap("repeat", "repeat")
-    self.bgQuad = love.graphics.newQuad(0, 0, screen.width + 256, screen.height + 256, 256, 256)
+    self.sheets = {}
+    for key, sh in pairs(SHEETS) do
+        local image = assets.image(DIR .. sh.file .. ".png")
+        self.sheets[key] = { image = image, quads = strip(image, sh.w, sh.h), w = sh.w, h = sh.h, face = sh.face,
+            fps = sh.fps }
+    end
+    self.q = {
+        player = strip(self.img.player, 26, 21),
+        hit = strip(self.img.hit, 16, 16, 0, 4),
+        orb = strip(self.img.laser_bolts, 16, 16, 0, 2),
+        capsule = { [0] = strip(self.img.power_up, 16, 16, 0, 2), [1] = strip(self.img.power_up, 16, 16, 16, 2) },
+    }
+    for _, name in ipairs({ "bg_back", "bg_stars", "bg_planet" }) do self.img[name]:setWrap("repeat", "clampzero") end
+    -- the space is 272x160 pixels: 4x fills the height, the rest is cut
+    self.bgScale = math.ceil(screen.height / 160)
+    self.bgQuad = love.graphics.newQuad(0, 0, screen.width / self.bgScale + 272, 160, 272, 160)
     self.player = { x = 130, y = screen.height / 2, r = 4, inv = 0, power = self.def.power or 1, shield = false, fireT = 0,
         tilt = 0 }
     self.shots, self.bullets, self.enemies, self.items, self.medals = {}, {}, {}, {}, {}
@@ -580,66 +612,101 @@ end
 
 -- drawing ---------------------------------------------------------------------------------------
 
-local function drawCentered(img, x, y, rot, s, alpha)
-    love.graphics.setColor(1, 1, 1, alpha or 1)
-    love.graphics.draw(img, x, y, rot or 0, s, s, img:getWidth() / 2, img:getHeight() / 2)
+-- a frame of a strip, pixel-snapped when it is not turned
+local function drawQuad(img, quad, x, y, rot, s, w, h)
+    if (rot or 0) == 0 then x, y = math.floor(x + 0.5), math.floor(y + 0.5) end
+    love.graphics.draw(img, quad, x, y, rot or 0, s, s, w / 2, h / 2)
+end
+
+function Shmup:enemyFrame(e)
+    local sh = self.sheets[e.k.sheet]
+    local n = #sh.quads
+    if sh.fps <= 0 then return sh, sh.quads[1] end
+    return sh, sh.quads[math.floor(self.time * sh.fps + (e.index or 0)) % n + 1]
 end
 
 function Shmup:drawGame()
     local lg = love.graphics
     local W, H = screen.width, screen.height
-    -- space: a scrolling tile and three layers of stars
+    -- space: three layers of pixel space (nebula, stars, the planet) and a few flying dots
+    local k = self.bgScale
+    local oy = math.floor((H - 160 * k) / 2)
     lg.setColor(1, 1, 1, 1)
-    local ox = (self.scroll * 30) % 256
-    lg.draw(self.img.bg_purple, self.bgQuad, -ox, 0)
+    for _, layer in ipairs({ { "bg_back", 6 }, { "bg_stars", 14 }, { "bg_planet", 2 } }) do
+        local ox = (self.scroll * layer[2]) % 272
+        lg.draw(self.img[layer[1]], self.bgQuad, -math.floor(ox) * k, oy, 0, k, k)
+    end
     for _, s in ipairs(self.stars) do
-        local x = (s.x - self.scroll * 40 * s.z) % W
-        local a = 0.25 + s.z * 0.2
-        if s.z == 3 then
-            drawCentered(self.img.star3, x, s.y, 0, 0.35, 0.8)
-        else
-            lg.setColor(1, 1, 1, a)
-            lg.rectangle("fill", x, s.y, s.z, s.z)
-        end
+        local x = math.floor((s.x - self.scroll * 40 * s.z) % W)
+        lg.setColor(0.75, 0.85, 1, 0.2 + s.z * 0.2)
+        lg.rectangle("fill", x, math.floor(s.y), s.z == 3 and 3 or 2, 2)
     end
     -- items and medals
     for _, it in ipairs(self.items) do
-        local img = self.img[DROPS[it.kind].image]
-        drawCentered(img, it.x, it.y, math.sin(it.t * 4) * 0.2, 0.9 + math.sin(it.t * 8) * 0.08)
+        local d = DROPS[it.kind]
+        local bob = math.floor(math.sin(it.t * 5) * 3)
+        if d.heart then
+            lg.setColor(1, 1, 1, 1)
+            ui.hearts(it.x - 14, it.y - 13 + bob, 2, 2, 0.8)
+        else
+            local c = d.tint or { 1, 1, 1 }
+            lg.setColor(c[1], c[2], c[3], 1)
+            local q = self.q.capsule[d.row][math.floor(it.t * 6) % 2 + 1]
+            drawQuad(self.img.power_up, q, it.x, it.y + bob, 0, 2, 16, 16)
+            ui.print(d.letter, math.floor(it.x), math.floor(it.y + bob - 9), { font = "small", align = "center",
+                color = { 1, 1, 1 }, outline = { 0, 0, 0 } })
+        end
     end
+    lg.setColor(1, 1, 1, 1)
     for _, m in ipairs(self.medals) do
-        drawCentered(self.img.star1, m.x, m.y, m.t * 6, 0.45)
+        local q = self.q.hit[1 + math.floor(m.t * 10) % 2]
+        lg.setColor(1, 0.95, 0.55, 1)
+        drawQuad(self.img.hit, q, m.x, m.y, 0, 1.5, 16, 16)
     end
-    -- enemies
+    -- enemies: every picture is turned from where it looks to where the ship flies
     for _, e in ipairs(self.enemies) do
         if not (e.dead and e.kind ~= "boss") and not e.hidden then
-            local img = self.img[e.k.image]
-            local rot = e.k.rock and e.rot or (e.kind == "boss" and e.rot or (e.rot ~= 0 and e.rot - PI2 or PI2))
-            if e.move == "dive" and e.vx then rot = math.atan2(e.vy, e.vx) - PI2 end
+            local sh, quad = self:enemyFrame(e)
+            local dir = math.pi
+            if e.k.rock then dir = e.rot
+            elseif e.move == "dive" and e.vx then dir = math.atan2(e.vy, e.vx)
+            elseif e.kind == "boss" then dir = math.pi + math.sin(e.t * 1.3) * 0.06 end
+            local rot = e.k.rock and dir or (dir - sh.face)
+            if math.abs(rot) < 1e-3 then rot = 0 end
             local s = e.k.scale
-            drawCentered(img, e.x, e.y, rot, s)
+            local c = e.k.tint or { 1, 1, 1 }
+            lg.setColor(c[1], c[2], c[3], 1)
+            drawQuad(sh.image, quad, e.x, e.y, rot, s, sh.w, sh.h)
             if e.flash > 0 then
                 lg.setBlendMode("add")
-                drawCentered(img, e.x, e.y, rot, s, e.flash * 0.8)
+                lg.setColor(1, 1, 1, e.flash * 0.8)
+                drawQuad(sh.image, quad, e.x, e.y, rot, s, sh.w, sh.h)
                 lg.setBlendMode("alpha")
             end
         end
     end
-    -- shots
+    -- shots: the blue bolts of the ship, the side guns are greenish
     for _, s in ipairs(self.shots) do
-        drawCentered(s.green and self.img.laserGreen11 or self.img.laserBlue01, s.x, s.y, s.rot + PI2, 0.7)
+        if s.green then lg.setColor(0.6, 1, 0.6, 1) else lg.setColor(1, 1, 1, 1) end
+        local img = math.floor((s.x + s.y) / 40) % 2 == 0 and self.img.shot1 or self.img.shot2
+        lg.draw(img, s.x, s.y, s.rot, 2, 2, 10, 3)
     end
-    -- the ship: blinking while invulnerable, the engine flame flickers
+    -- the ship: blinking while invulnerable; it rolls when it goes up or down
     local p = self.player
     if self.phase ~= "over" or self.won then
         local blink = p.inv > 0 and math.floor(self.time * 16) % 2 == 0
         if not blink then
-            local flame = math.floor(self.time * 20) % 2 == 0 and self.img.fire08 or self.img.fire09
-            drawCentered(flame, p.x - 30, p.y, PI2, 0.9 + math.sin(self.time * 30) * 0.1)
-            drawCentered(self.img.playerShip1_blue, p.x, p.y, PI2 + p.tilt, 0.5)
+            local frame = p.tilt < -0.12 and 1 or (p.tilt > 0.12 and 3 or 2)
+            lg.setColor(1, 1, 1, 1)
+            drawQuad(self.img.player, self.q.player[frame], p.x, p.y, 0, 2, 26, 21)
+            if p.fireT > 0.07 then
+                lg.draw(self.img.flash, math.floor(p.x + 26), math.floor(p.y), 0, 2, 2, 2, 9.5)
+            end
         end
         if p.shield then
-            drawCentered(self.img.shield1, p.x + 4, p.y, PI2, 0.5, 0.55 + 0.2 * math.sin(self.time * 6))
+            local q = self.q.hit[3 + math.floor(self.time * 8) % 2]
+            lg.setColor(0.7, 0.9, 1, 0.6 + 0.25 * math.sin(self.time * 6))
+            drawQuad(self.img.hit, q, p.x + 2, p.y, 0, 4, 16, 16)
         end
         if p.focus then
             lg.setColor(1, 1, 1, 0.9)
@@ -648,11 +715,12 @@ function Shmup:drawGame()
             lg.circle("line", p.x, p.y, p.r + 2)
         end
     end
-    -- enemy bullets on top of everything
+    -- enemy bullets on top of everything: pink pixel orbs
+    lg.setColor(1, 1, 1, 1)
     for _, b in ipairs(self.bullets) do
-        drawCentered(self.img.laserRed08, b.x, b.y, b.t * 5, b.r / 16)
-        lg.setColor(1, 0.9, 0.9, 1)
-        lg.circle("fill", b.x, b.y, b.r * 0.45)
+        local q = self.q.orb[1 + math.floor(b.t * 10) % 2]
+        local sc = math.max(2, math.floor(b.r / 2.5 + 0.5))
+        drawQuad(self.img.laser_bolts, q, b.x, b.y, 0, sc, 16, 16)
     end
     lg.setColor(1, 1, 1, 1)
     -- the boss bar
@@ -662,9 +730,12 @@ function Shmup:drawGame()
     end
     -- bombs and power
     for i = 1, self.bombs do
-        drawCentered(self.img.powerupRed_star, 18 + i * 26, H - 22, 0, 0.6)
+        lg.setColor(1, 0.75, 0.45, 1)
+        drawQuad(self.img.power_up, self.q.capsule[0][1], 18 + i * 28, H - 22, 0, 1.5, 16, 16)
+        ui.print("B", 18 + i * 28, H - 31, { font = "small", align = "center", color = { 1, 1, 1 }, outline = { 0, 0, 0 } })
     end
-    ui.print("Пушка " .. string.rep("■", p.power) .. string.rep("□", 4 - p.power), W - 20, H - 32,
+    lg.setColor(1, 1, 1, 1)
+    ui.print("Пушка " .. string.rep("■", p.power) .. string.rep("□", 4 - p.power), W - 20, 40,
         { font = "small", align = "right", color = "blue" })
     if self.bombT then
         local k = self.bombT / 0.8

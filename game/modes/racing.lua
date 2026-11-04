@@ -1,6 +1,7 @@
 -- Top-down racing (Micro Machines style): three laps against three rivals. Drifting fills the
--- nitro bar, nitro gives a short boost. Grass slows you down, trees and tires stop you.
--- Sprites: "Racing Pack" by Kenney (CC0); the road is built from its asphalt and curb tiles.
+-- nitro bar, nitro gives a short boost. Grass slows you down, trees and rocks stop you.
+-- Pixel art: cars "Cars Top Down View" by Ian Peter (CC0, recolored); the road, the grass, trees, rocks,
+-- barrels, benches and houses: "isaiah658's Pixel Pack #1" by isaiah658 (CC0). Everything is drawn 2x.
 --
 --   game.stage "rally" { kind = "racing", laps = 3, goal = 1, level = 3, prize = { coin = 15 } }
 --   local r = s:play("racing", { laps = 2, goal = 3 })     -- r.win, r.place, r.time
@@ -34,14 +35,16 @@ Racing.defaultLives = 0
 
 local DIR = "assets/sprites/racing/"
 local HW = 88        -- half width of the road
-local CURB = 22
+local CURB = 26
 local STEP = 12      -- distance between samples of the center line
 local TRACK = {
     { 400, 300 }, { 1100, 250 }, { 1700, 320 }, { 2200, 430 }, { 2380, 800 }, { 2120, 1110 },
     { 1650, 1010 }, { 1330, 1160 }, { 1500, 1460 }, { 1100, 1580 }, { 600, 1470 }, { 330, 1120 },
     { 520, 760 }, { 280, 540 },
 }
-local CARS = { "car_blue_1", "car_red_2", "car_green_3", "car_yellow_4", "car_black_5" }
+local CARS = { "car_blue", "car_red", "car_green", "car_yellow", "car_black" }
+local PX = 2          -- every picture is drawn 2x (the cars a bit less: they turn anyway)
+local CAR_SCALE = 1.35
 local NAMES = { "Гриша", "Рыжий", "Зелёный", "Жёлтый", "Чёрный" }
 local COLORS = { { 0.3, 0.6, 1 }, { 1, 0.35, 0.3 }, { 0.3, 0.85, 0.4 }, { 1, 0.85, 0.2 }, { 0.3, 0.3, 0.3 } }
 
@@ -111,13 +114,12 @@ end
 
 function Racing:setup()
     self.img = {}
-    for _, n in ipairs({ "asphalt", "curb", "grass", "tree_large", "tree_small", "tires_red", "tires_white", "tribune_full",
-        "tent_red_large", "tent_blue_large", "barrier_red_race", "cone_straight", "skidmark_short_1", "lights", "rock1",
-        "rock2", "oil", "barrel_red" }) do
+    for _, n in ipairs({ "road", "shoulder", "grass", "tall_grass", "flowers", "flowers2", "tree1", "tree2", "pine", "bush",
+        "rocks", "barrel", "bench", "streetlight", "house1", "house3" }) do
         self.img[n] = assets.image(DIR .. n .. ".png")
     end
     for _, c in ipairs(CARS) do self.img[c] = assets.image(DIR .. c .. ".png") end
-    for _, n in ipairs({ "asphalt", "curb", "grass" }) do self.img[n]:setWrap("repeat", "repeat") end
+    for _, n in ipairs({ "road", "shoulder", "grass" }) do self.img[n]:setWrap("repeat", "repeat") end
     self.line = buildLine(self.def.track or TRACK)
     local L = self.line
     self.N = #L
@@ -128,10 +130,11 @@ function Racing:setup()
     end
     self.bounds = { x0 - 500, y0 - 400, x1 + 500, y1 + 400 }
     local b = self.bounds
-    self.grassQuad = love.graphics.newQuad(0, 0, b[3] - b[1], b[4] - b[2], 128, 128)
-    self.roadMesh = strip(L, self.img.asphalt, HW, -HW, HW * 2 / 128)
-    self.curbL = strip(L, self.img.curb, HW + CURB, HW - 6, 1)
-    self.curbR = strip(L, self.img.curb, -HW - CURB, -HW + 6, 1)
+    -- the grass goes a screen further than the world, so the camera never sees its end
+    self.grassQuad = love.graphics.newQuad(0, 0, (b[3] - b[1] + 1000) / PX, (b[4] - b[2] + 600) / PX, 16, 16)
+    self.roadMesh = strip(L, self.img.road, HW, -HW, 1)
+    self.curbL = strip(L, self.img.shoulder, HW + CURB, HW - 6, 1)
+    self.curbR = strip(L, self.img.shoulder, -HW - CURB, -HW + 6, 1)
     self:decorate()
     self.laps = self.def.laps or 3
     self.goal = self.def.goal or (self.level <= 1 and 3 or (self.level == 2 and 2 or 1))
@@ -157,10 +160,12 @@ function Racing:setup()
     self.cam = { x = self.player.x, y = self.player.y }
 end
 
--- trees, tires and tribunes around the road (never on it)
+-- trees, rocks, benches and houses around the road (never on it). The pictures are drawn from the
+-- side (3/4 view), so they stand on their lowest point: x, y is the foot, r the solid part.
 function Racing:decorate()
     local rng = love.math.newRandomGenerator(7)
     self.props = {}
+    self.deco = {}
     local function far(x, y, d)
         for i = 1, self.N, 3 do
             local p = self.line[i]
@@ -169,27 +174,38 @@ function Racing:decorate()
         return true
     end
     local b = self.bounds
-    for _ = 1, 90 do
+    -- grass tufts and flowers: only pictures on the ground
+    for _ = 1, 160 do
         local x, y = rng:random(b[1], b[3]), rng:random(b[2], b[4])
-        local big = rng:random() < 0.5
-        if far(x, y, HW + (big and 150 or 110)) then
-            table.insert(self.props, { img = big and "tree_large" or "tree_small", x = x, y = y, r = big and 60 or 40,
-                rot = rng:random() * 6, scale = big and 0.75 or 0.7, solid = true, top = true })
+        if far(x, y, HW + CURB + 20) then
+            local k = rng:random(3)
+            table.insert(self.deco, { img = k == 1 and "tall_grass" or (k == 2 and "flowers" or "flowers2"),
+                x = math.floor(x / PX) * PX, y = math.floor(y / PX) * PX })
         end
     end
-    -- tire walls on the outside of the sharp bends
+    for _ = 1, 110 do
+        local x, y = rng:random(b[1], b[3]), rng:random(b[2], b[4])
+        local k = rng:random(4)
+        local big = k <= 2
+        if far(x, y, HW + 70) and far(x, y - (big and 110 or 50), HW + (big and 90 or 60)) then
+            local img = k == 1 and "tree1" or (k == 2 and "tree2" or (k == 3 and "pine" or "bush"))
+            table.insert(self.props, { img = img, x = x, y = y, r = big and 20 or (k == 3 and 16 or 24),
+                solid = true, top = true, foot = k ~= 4 })
+        end
+    end
+    -- rocks and barrels on the outside of the sharp bends
     for i = 1, self.N, 6 do
         local a, c = self.line[i], self.line[(i + 9) % self.N + 1]
         local turn = math.atan2(math.sin(c.angle - a.angle), math.cos(c.angle - a.angle))
         if math.abs(turn) > 0.5 then
             local side = turn > 0 and -1 or 1
             local d = HW + CURB + 34
-            table.insert(self.props, { img = (i % 12 == 1) and "tires_red" or "tires_white", x = a.x + a.nx * d * side,
-                y = a.y + a.ny * d * side, r = 22, rot = 0, scale = 0.8, solid = true })
+            local barrel = i % 24 == 1
+            table.insert(self.props, { img = barrel and "barrel" or "rocks", x = a.x + a.nx * d * side,
+                y = a.y + a.ny * d * side, r = barrel and 14 or 20, solid = true, foot = barrel })
         end
     end
-    -- the tribune and the tents by the start, wherever there is room
-    local s = self.line[1]
+    -- the benches for the fans and two houses by the start, wherever there is room
     local placed = 0
     for _, side in ipairs({ -1, 1 }) do
         for k = 0, 40, 4 do
@@ -198,18 +214,28 @@ function Racing:decorate()
             local x, y = p.x + p.nx * d, p.y + p.ny * d
             local roomy = true
             for _, q in ipairs(self.props) do
-                if q.img:find("^t[er]") and (q.x - x) ^ 2 + (q.y - y) ^ 2 < 300 ^ 2 then roomy = false end
+                if q.big and (q.x - x) ^ 2 + (q.y - y) ^ 2 < 300 ^ 2 then roomy = false end
             end
-            if roomy and far(x, y, HW + 150) then
-                local img = placed == 0 and "tribune_full" or (placed == 1 and "tent_red_large" or "tent_blue_large")
-                table.insert(self.props, { img = img, x = x, y = y, r = placed == 0 and 0 or 60, rot = placed == 0 and s.angle or 0,
-                    scale = placed == 0 and 0.8 or 0.55, solid = placed > 0 })
+            if roomy and far(x, y, HW + 150) and far(x, y - 120, HW + 120) then
+                if placed == 0 then
+                    -- a stand: three benches and two lamps
+                    for j = -1, 1 do
+                        table.insert(self.props, { img = "bench", x = x + j * 70, y = y, r = 0, big = j == 0 })
+                    end
+                    table.insert(self.props, { img = "streetlight", x = x - 120, y = y + 10, r = 8, solid = true, foot = true })
+                    table.insert(self.props, { img = "streetlight", x = x + 120, y = y + 10, r = 8, solid = true, foot = true })
+                else
+                    table.insert(self.props, { img = placed == 1 and "house1" or "house3", x = x, y = y + 100, r = 80,
+                        solid = true, foot = true, top = true, big = true })
+                end
                 placed = placed + 1
                 if placed > 2 then break end
             end
         end
         if placed > 2 then break end
     end
+    -- the far ones are drawn first
+    table.sort(self.props, function(p, q) return p.y < q.y end)
 end
 
 function Racing:goalText()
@@ -484,6 +510,12 @@ local function drawC(img, x, y, rot, s, alpha)
     love.graphics.draw(img, x, y, rot or 0, s, s, img:getWidth() / 2, img:getHeight() / 2)
 end
 
+-- a side-view picture standing on its foot (or lying around its center), on whole pixels
+local function drawProp(img, p)
+    local w, h = img:getDimensions()
+    love.graphics.draw(img, math.floor(p.x), math.floor(p.y), 0, PX, PX, math.floor(w / 2), p.foot and h - 3 or h / 2)
+end
+
 function Racing:drawGame()
     local lg = love.graphics
     local W, H = screen.width, screen.height
@@ -491,7 +523,8 @@ function Racing:drawGame()
     lg.translate(math.floor(W / 2 - self.cam.x), math.floor(H / 2 - self.cam.y))
     local b = self.bounds
     lg.setColor(1, 1, 1, 1)
-    lg.draw(self.img.grass, self.grassQuad, b[1], b[2])
+    lg.draw(self.img.grass, self.grassQuad, b[1] - 500, b[2] - 300, 0, PX, PX)
+    for _, d in ipairs(self.deco) do lg.draw(self.img[d.img], d.x, d.y, 0, PX, PX, 8, 8) end
     lg.draw(self.curbL)
     lg.draw(self.curbR)
     lg.draw(self.roadMesh)
@@ -509,27 +542,34 @@ function Racing:drawGame()
             lg.pop()
         end
     end
-    lg.setColor(1, 1, 1, 0.45)
+    -- skid marks: short dark strokes
+    lg.setColor(0.05, 0.05, 0.06, 0.35)
     for _, k in ipairs(self.skids) do
-        lg.draw(self.img.skidmark_short_1, k.x, k.y, k.a, 0.35, 0.6, 30, 8)
+        lg.push()
+        lg.translate(k.x, k.y)
+        lg.rotate(k.a)
+        lg.rectangle("fill", -6, -2, 12, 4)
+        lg.pop()
     end
+    lg.setColor(1, 1, 1, 1)
     for _, p in ipairs(self.props) do
-        if not p.top then drawC(self.img[p.img], p.x, p.y, p.rot, p.scale) end
+        if not p.top then drawProp(self.img[p.img], p) end
     end
     -- cars with a soft shadow
     for _, c in ipairs(self.cars) do
         local img = self.img[c.sprite]
         lg.setColor(0, 0, 0, 0.3)
-        lg.draw(img, c.x + 4, c.y + 5, c.a + math.pi / 2, 0.45, 0.45, img:getWidth() / 2, img:getHeight() / 2)
-        drawC(img, c.x, c.y, c.a + math.pi / 2, 0.45)
+        lg.draw(img, c.x + 4, c.y + 5, c.a + math.pi / 2, CAR_SCALE, CAR_SCALE, img:getWidth() / 2, img:getHeight() / 2)
+        drawC(img, c.x, c.y, c.a + math.pi / 2, CAR_SCALE)
         if c.boost > 0 then
             local fx, fy = math.cos(c.a), math.sin(c.a)
             lg.setColor(1, 0.7, 0.2, 0.7)
             lg.circle("fill", c.x - fx * 30, c.y - fy * 30, 6 + math.sin(self.time * 40) * 2)
         end
     end
+    lg.setColor(1, 1, 1, 1)
     for _, p in ipairs(self.props) do
-        if p.top then drawC(self.img[p.img], p.x, p.y, p.rot, p.scale) end
+        if p.top then drawProp(self.img[p.img], p) end
     end
     lg.pop()
     lg.setColor(1, 1, 1, 1)
@@ -541,13 +581,21 @@ function Racing:drawGame()
     ui.bar(24, H - 30, 160, 8, p.nitro, 1, p.nitro >= 0.34 and "gold" or "blue")
     ui.print("нитро", 192, H - 36, { font = "small", color = "faded" })
     if self.countdown > 0 then
-        drawC(self.img.lights, W / 2, 90, 0, 1)
+        -- the start lights: three lamps in a dark box
+        lg.setColor(0.06, 0.06, 0.08, 0.92)
+        lg.rectangle("fill", W / 2 - 84, 62, 168, 56, 6)
+        lg.setColor(0.35, 0.35, 0.4, 1)
+        lg.setLineWidth(2)
+        lg.rectangle("line", W / 2 - 84, 62, 168, 56, 6)
+        lg.setLineWidth(1)
         local lit = 3 - math.ceil(self.countdown)
         for i = 0, 2 do
             if i <= lit then
-                lg.setColor(i == 2 and 0.3 or 1, i == 2 and 1 or 0.25, 0.2, 0.85)
-                lg.circle("fill", W / 2 - 50 + i * 50, 90, 14)
+                lg.setColor(i == 2 and 0.3 or 1, i == 2 and 1 or 0.25, 0.2, 1)
+            else
+                lg.setColor(0.2, 0.2, 0.22, 1)
             end
+            lg.circle("fill", W / 2 - 50 + i * 50, 90, 14)
         end
         lg.setColor(1, 1, 1, 1)
     end

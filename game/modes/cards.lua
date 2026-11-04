@@ -1,5 +1,5 @@
 -- Card game in the style of Balatro: play poker hands, every hand scores chips x mult,
--- jokers change the score ("Playing Cards Pack" by Kenney, CC0; jokers: game/data/jokers.lua).
+-- jokers change the score (cards: "Asset Pack Pixel Poker" by Chasersgaming, CC0; jokers: game/data/jokers.lua).
 --
 --   game.stage "tavern_cards" { kind = "cards", goal = 300, hands = 4, discards = 3 }
 --   local r = s:play("cards", { goal = 500, jokers = { "joker", "greedy" } })   -- r.win, r.score
@@ -52,7 +52,7 @@ local HANDS = {
     { id = "pair", name = "Пара", chips = 10, mult = 2 },
     { id = "high", name = "Старшая карта", chips = 5, mult = 1 },
 }
-local CW, CH = 84, 120
+local CW, CH = 68, 100     -- a 34x50 pixel card drawn 2x
 local HAND_Y = 400
 
 local function cardChips(rank)
@@ -105,7 +105,7 @@ end
 function Cards:setup()
     self.images = {}
     self.back = assets.image("assets/sprites/cards/back.png")
-    self.jokerImage = assets.image("assets/sprites/cards/joker_red.png")
+    self.blank = assets.image("assets/sprites/cards/empty.png")
     self.goal = self.def.goal or (300 + 150 * self.level)
     self.handsLeft = self.def.hands or 4
     self.discardsLeft = self.def.discards or 3
@@ -362,7 +362,7 @@ function Cards:drawPlayingCard(c, alpha)
     if bump > 0 then c.bump = math.max(0, bump - love.timer.getDelta() * 3) end
     local s = 2 * (1 + bump * 0.15)
     lg.setColor(0, 0, 0, 0.35)
-    lg.rectangle("fill", c.x - CW / 2 + 5, c.y - CH / 2 + 7, CW, CH, 6)
+    lg.rectangle("fill", c.x - CW / 2 + 5, c.y - CH / 2 + 7, CW, CH, 4)
     lg.setColor(1, 1, 1, alpha or 1)
     lg.draw(self:imageOf(c), c.x, c.y, math.sin((c.t or 0) * 2 + c.rank) * 0.015, s, s, 32, 32)
 end
@@ -384,16 +384,21 @@ function Cards:drawGame()
         local y = 112
         local rot = math.sin(j.wiggle * 20) * 0.12 * j.wiggle
         lg.setColor(1, 1, 1, 1)
-        lg.draw(self.jokerImage, j.x - 60, y, rot, 1.5, 1.5, 32, 32)
+        -- a joker: a blank pixel card with its picture, the name and the rule next to it
+        lg.draw(self.blank, j.x - 60, y, rot, 2, 2, 32, 32)
         local icon = assets.image("assets/sprites/icons/" .. (j.def.icon or "clover") .. ".png")
-        lg.draw(icon, j.x - 60, y, rot, 0.9, 0.9, 17, 17)
+        lg.draw(icon, j.x - 60, y, rot, 1, 1, 17, 17)
         ui.print(j.def.name, j.x - 20, y - 30, { font = "small", color = "accent" })
-        ui.print(j.def.text, j.x - 20, y - 6, { font = "small", color = "light", width = 140 })
+        local font = ui.font("small")
+        local _, lines = font:getWrap(j.def.text, 116)
+        for li, line in ipairs(lines) do
+            ui.print(line, j.x - 20, y - 6 + (li - 1) * (font:getHeight() + 2), { font = "small", color = "light" })
+        end
     end
     -- the deck
     for k = 0, math.min(4, #self.deck - 1) do
         lg.setColor(1, 1, 1, 1)
-        lg.draw(self.back, 850 - k * 2, 250 - k * 2, 0, 1.5, 1.5, 32, 32)
+        lg.draw(self.back, 850 - k * 2, 250 - k * 2, 0, 2, 2, 32, 32)
     end
     ui.print(#self.deck, 850, 300, { font = "small", align = "center", color = "light" })
     -- the hand being scored
