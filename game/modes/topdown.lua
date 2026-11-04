@@ -498,6 +498,11 @@ function TopDown:update(dt, fromScript)
         scene.push(Bag(self))
         return
     end
+    if input.pressed("journal") then
+        local Journal = require("game.ui.journal")
+        scene.push(Journal(self))
+        return
+    end
 
     world:update(dt)
     self.trail:push(player.x, player.y)

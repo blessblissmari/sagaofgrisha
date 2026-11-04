@@ -20,7 +20,8 @@
 --   s:look(who, "left")     s:move(who, "left")  s:faint(who)  s:closeup(who | nil)
 --   s:flash(color)          s:weather("rain")  s:daytime("night")  s:letterbox(true)
 -- The stage ends with the script and goes to `next`.
--- Hold [Ctrl] to skip text, [Esc] opens the pause menu.
+-- Hold [Ctrl] to skip text, [A] turns the pages by itself, [L] shows what was said
+-- (the "Разговоры" tab of the journal), [Esc] opens the pause menu.
 
 local engine = require("engine")
 local assets = engine.assets
@@ -360,7 +361,12 @@ function Novel:cmd_letterbox(s, on)
     self.timer:tween(0.5, self, { bars = on == false and 0 or 1 }, "quadInOut")
 end
 
+-- a chapter banner; it is also the chapter of the journal (decisions, tasks): s:chapter()
 function Novel:cmd_title(s, text, sub)
+    local st = require("game").state
+    if st then
+        st.chapter = sub and (text .. ". " .. sub) or text
+    end
     audio.play("bell")
     self.banner = { text = text, sub = sub, alpha = 0 }
     local b = self.banner
@@ -407,6 +413,17 @@ function Novel:update(dt, fromScript)
     if top and top.box then
         top.box.fast = input.down("skip")
         self.speaking = top.box.state ~= "hidden" and top.box.speaker and top.box.speaker.id
+        if input.pressed("auto") then
+            self.auto = not self.auto
+            ui.toast(self.auto and "Авто: страницы листаются сами" or "Авто выключено")
+            audio.play("ui_select")
+        end
+        top.box.auto = self.auto
+        if input.pressed("log") or input.pressed("journal") then
+            local Journal = require("game.ui.journal")
+            scene.push(Journal(self, input.pressed("log") and "history" or nil))
+            return
+        end
     end
     if self:pausePressed() then
         input.consume("pause")
@@ -495,7 +512,17 @@ function Novel:draw()
         lg.rectangle("fill", 0, 0, screen.width, screen.height)
     end
     lg.setColor(1, 1, 1, 1)
-    ui.print("[Ctrl] перемотка   [Esc] пауза", screen.width - 12, 8,
+    -- the keys come from the keymap (story.lua can change them)
+    if scene.top() ~= self and scene.top().box or not self.hint then
+        local function key(action)
+            return input.keyName(action)
+        end
+        if key("auto") ~= "?" then
+            self.hint = "[" .. key("skip") .. "] перемотка   [" .. key("auto") .. "] авто   ["
+                .. key("log") .. "] история   [" .. key("pause") .. "] пауза"
+        end
+    end
+    ui.print((self.auto and "АВТО   " or "") .. (self.hint or ""), screen.width - 12, 8,
         { font = "small", align = "right", color = "light", shadow = true, alpha = 0.6 })
 end
 

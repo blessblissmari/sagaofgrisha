@@ -7,7 +7,7 @@
 --   s:go("island", "swirl")              -- another stage with a transition
 --
 -- All commands:
---   say(who, text) narrate(text) ask(question, options, who) wait(seconds)
+--   say(who, text) narrate(text) think([who,] text) ask(question, options, who, opts) wait(seconds)
 --   go(stage, transition | { transition, spawn })   play(stage, opts) -> result
 --   battle(enemies, opts) -> result        tactics(opts) -> result
 --   flag(name [, value]) counter(name [, add]) once(name)
@@ -15,11 +15,29 @@
 --   heal(n) hurt(n) addPet(id) removePet(id) hasPet(id)
 --   unlock(ability) unlocked(ability)
 --   sound(name) music(name) stopMusic() toast(text, icon) save()
+-- Storytelling (the journal [N] shows all of it: tasks, decisions, relations, the encyclopedia):
+--   remember(who, what [, text]) remembers(who, what)   -- "Кашка запомнит это."
+--   like(who, n) affinity(who)                          -- relations: +1 / -1
+--   check(talent, difficulty, label) -> ok, sum         -- 2d6 + talent (game/data/talents.lua)
+--   talent(id [, add])                                  -- read / raise a talent
+--   journal(id, text) journalDone(id)                   -- tasks of the journal
+--   learn(group, id, name, text) known(group, id)       -- the encyclopedia: people, places, monsters...
+--   choice(id) -> index, answer                         -- what was answered in ask { id = ... }
+--   chapter([name]) recap([title])                      -- the chapter; its decisions on one screen
+-- Answers of ask can be tables (the number returned is still the place in the list):
+--   { "Отдать морковку", requires = "carrot", take = true }  -- grey "(нужно: Морковь)" without it
+--   { "Перепрыгнуть", check = { "agility", 9 } }            -- "[Ловкость] Перепрыгнуть 72%", a dice check
+--   { "Соврать", flag = "lied", like = { "bunny", -1 }, remember = { "bunny", "lie", "Ты соврал" } }
+--   { "Секрет", hidden = not s:flag("knows") }               -- not shown at all
+--   local i, ok, late = s:ask("Быстрее!", { "Прыгать", "Ждать" }, nil, { time = 5, default = 2, id = "jump" })
+--     ok = the result of the check of the answer, late = the time ran out (the default was taken),
+--     id = the decision goes to the journal, s:choice("jump") returns it later
 -- and the commands of the current mode, for example in the novel:
 --   bg(name) show(who, { at = "left" }) hide(who) shake() flash() title(text)
 -- or in the top-down world: spawn(mob, x, y) teleport(spawn) shake() face(dir)
 
 local audio = require("engine.audio")
+local scene = require("engine.scene")
 local ui = require("engine.ui")
 
 local Director = {}
@@ -87,15 +105,149 @@ function Director:narrate(text)
     return self:say(nil, text)
 end
 
--- ask("Вопрос?", { "Да", "Нет" }, who) or ask(who, "Вопрос?", { "Да", "Нет" })
-function Director:ask(a, b, c)
-    local question, options, who
-    if type(b) == "table" then
-        question, options, who = a, b, c
-    else
-        who, question, options = a, b, c
+-- the text without markup: {accent}, {p}, {@hop}...
+local function plain(text)
+    return (tostring(text or ""):gsub("{[^{}]*}", ""))
+end
+
+local function talentName(id)
+    local info = game().talents[id]
+    return info and info.name or id
+end
+
+-- the label of an answer and whether it can be chosen (see the header)
+local function optionView(o)
+    local g = game()
+    local label = o.label or o[1] or "?"
+    local disabled = o.disabled
+    if o.requires then
+        local item, n = o.requires, 1
+        if type(item) == "table" then
+            item, n = item[1], item[2] or 1
+        end
+        if not g.has(item, n) then
+            disabled = true
+            local info = g.items[item]
+            label = label .. " (нужно: " .. (info and info.name or item) .. (n > 1 and " x" .. n or "") .. ")"
+        end
     end
-    self.runner:ask(game().speaker(who), question, options or { "Да", "Нет" })
+    if o.check then
+        local t, dc = o.check[1], o.check[2]
+        if not label:find("^%[") then
+            label = "[" .. talentName(t) .. "] " .. label
+        end
+        label = label .. "  " .. require("game.ui.check").chance(g.state.talents[t] or 0, dc) .. "%"
+    end
+    return { label = label, disabled = disabled }
+end
+
+-- ask("Вопрос?", options [, who] [, opts]) or ask(who, "Вопрос?", options [, opts])
+-- returns the number of the answer, the result of its check, true when the time ran out
+function Director:ask(a, b, c, d)
+    local question, options, who, opts
+    if type(b) == "table" then
+        question, options, who, opts = a, b, c, d
+        if type(who) == "table" and who.name == nil then
+            who, opts = nil, who -- ask("Вопрос?", options, { time = 5 })
+        end
+    else
+        who, question, options, opts = a, b, c, d
+    end
+    options = options or { "Да", "Нет" }
+    opts = opts or {}
+    local shown, place = {}, {}
+    for i, o in ipairs(options) do
+        if type(o) ~= "table" then
+            o = { label = o }
+        end
+        if not o.hidden then
+            shown[#shown + 1] = optionView(o)
+            place[#shown] = i
+        end
+    end
+    -- never a dead end: when nothing can be chosen, the last answer can
+    local any = false
+    for _, v in ipairs(shown) do
+        any = any or not v.disabled
+    end
+    if not any and #shown > 0 then
+        shown[#shown].disabled = false
+    end
+    local default
+    if opts.time then
+        default = #shown
+        for k, i in ipairs(place) do
+            if i == opts.default then
+                default = k
+            end
+        end
+        while default > 1 and shown[default].disabled do
+            default = default - 1
+        end
+    end
+    local speaker = game().speaker(who)
+    if question then
+        game().remember(speaker, question)
+    end
+    self.runner:ask(speaker, question, shown, { time = opts.time, default = default })
+    local k, late = yield()
+    local i = place[k] or k
+    local o = options[i]
+    local chosen = shown[k] and shown[k].label or "?"
+    game().remember({ name = "Ответ" }, (late and "(время вышло) " or "") .. chosen, "answer")
+    local ok
+    if type(o) == "table" then
+        if o.take and o.requires then
+            local item = o.requires
+            if type(item) == "table" then
+                self:take(item[1], item[2] or 1)
+            else
+                self:take(item, 1)
+            end
+        end
+        if o.flag then
+            self:flag(o.flag, true)
+        end
+        if o.like then
+            self:like(o.like[1], o.like[2])
+        end
+        if o.remember then
+            self:remember(o.remember[1], o.remember[2], o.remember[3])
+        end
+    end
+    if opts.id then
+        self:decide(opts.id, question, o, i, late)
+    end
+    if type(o) == "table" and o.check then
+        local label = plain(o.label or o[1]):gsub("^%[[^%]]*%]%s*", "")
+        ok = self:check(o.check[1], o.check[2], o.check.label or label)
+    end
+    return i, ok, late == true
+end
+
+-- the inner voice: s:think("Тут кто-то был...") (the hero) or s:think("bunny", "...")
+local thoughts = {}
+function Director:think(who, text)
+    if text == nil then
+        who, text = game().player.speaker or "grisha", who
+    end
+    local base = game().speaker(who) or {}
+    local sp = thoughts[who]
+    if not sp or sp.base ~= base then
+        sp = { base = base, id = base.id, name = (base.name or "") .. " (про себя)", voice = base.voice,
+            speed = base.speed, color = ui.theme.colors.faded }
+        thoughts[who] = sp
+    end
+    if type(text) == "table" then
+        local pages = {}
+        for k, t in ipairs(text) do
+            pages[k] = "{faded}" .. t .. "{/}"
+        end
+        text = pages
+    else
+        text = "{faded}" .. text .. "{/}"
+    end
+    self.runner:say(sp, text)
     return yield()
 end
 
@@ -274,6 +426,164 @@ end
 
 function Director:save()
     game().save()
+end
+
+-- storytelling: memory, relations, talents, the journal ------------------------------
+
+local function notice(who, text, color)
+    local sp = game().speaker(who)
+    ui.toast(text, { side = "right", portrait = sp and sp.portrait, color = color })
+end
+
+local function nameOf(who)
+    local sp = game().speaker(who)
+    return sp and sp.name or tostring(who)
+end
+
+-- the character will remember it: s:remember("bunny", "carrot", "Ты отдал ей морковку")
+function Director:remember(who, what, text)
+    local memory = game().state.memory
+    memory[who] = memory[who] or {}
+    local first = memory[who][what] == nil
+    memory[who][what] = text or true
+    if first then
+        notice(who, nameOf(who) .. " запомнит это.")
+        audio.play("two_tone", { volume = 0.5 })
+    end
+end
+
+function Director:remembers(who, what)
+    local m = game().state.memory[who]
+    return m ~= nil and m[what] ~= nil
+end
+
+-- relations: s:like("bunny", 1) (or -1); s:like("bunny", 1, "Кашка тронута") with your own notice
+function Director:like(who, n, text)
+    n = n or 1
+    local st = game().state
+    st.affinity[who] = (st.affinity[who] or 0) + n
+    if n ~= 0 then
+        notice(who, text or (nameOf(who) .. (n > 0 and " одобряет" or " не одобряет")), n > 0 and "green" or "red")
+        audio.play(n > 0 and "two_tone" or "ui_error", { volume = 0.5 })
+    end
+    return st.affinity[who]
+end
+
+function Director:affinity(who)
+    return game().state.affinity[who] or 0
+end
+
+-- talents: s:talent("wits") -> 2, s:talent("wits", 1) raises it
+function Director:talent(id, add)
+    local st = game().state
+    if add and add ~= 0 then
+        st.talents[id] = (st.talents[id] or 0) + add
+        ui.toast(talentName(id) .. (add > 0 and " +" or " ") .. add, { color = add > 0 and "green" or "red" })
+        audio.play(add > 0 and "powerup" or "ui_error")
+    end
+    return st.talents[id] or 0
+end
+
+-- a dice check: 2d6 + talent >= difficulty. Two sixes always win, two ones always lose.
+function Director:check(talent, difficulty, label)
+    self.runner:hideBox()
+    local Check = require("game.ui.check")
+    scene.push(Check({ talent = talent, dc = difficulty, label = label }, function(ok, sum)
+        self.runner:continue(ok, sum)
+    end))
+    return yield()
+end
+
+-- tasks: s:journal("door", "Открыть подземелье") adds or changes, s:journalDone("door") ticks it,
+-- s:journal("door") -> { id, text, done, chapter } or nil
+function Director:journal(id, text)
+    local st = game().state
+    for _, e in ipairs(st.journal) do
+        if e.id == id then
+            if text and text ~= e.text then
+                e.text = text
+                ui.toast("Дневник: " .. plain(text), { icon = "book" })
+            end
+            return e
+        end
+    end
+    if not text then
+        return nil
+    end
+    local e = { id = id, text = text, chapter = st.chapter }
+    table.insert(st.journal, e)
+    ui.toast("Новая запись: " .. plain(text), { icon = "book" })
+    audio.play("card_slide")
+    return e
+end
+
+function Director:journalDone(id)
+    local e = self:journal(id)
+    if e and not e.done then
+        e.done = true
+        ui.toast("Выполнено: " .. plain(e.text), { icon = "book", color = "green" })
+        audio.play("bonus")
+    end
+    return e
+end
+
+-- the encyclopedia: s:learn("people", "ghost", "Призрак", "Живёт в подземелье.")
+-- groups: people, places, monsters, things or your own (fish are added by the fishing)
+function Director:learn(group, id, name, text)
+    local codex = game().state.codex
+    codex[group] = codex[group] or {}
+    local first = codex[group][id] == nil
+    codex[group][id] = { name = name, text = text }
+    if first then
+        ui.toast("Энциклопедия: " .. plain(name), { icon = "book" })
+    end
+end
+
+function Director:known(group, id)
+    local codex = game().state.codex
+    return codex[group] ~= nil and codex[group][id] ~= nil
+end
+
+-- decisions (ask with opts.id): the journal shows them, s:choice(id) -> index, answer
+function Director:decide(id, question, option, index, late)
+    local st = game().state
+    local answer = type(option) == "table" and (option.label or option[1]) or option
+    local entry = { id = id, text = plain(question), answer = plain(answer), index = index,
+        chapter = st.chapter, late = late or nil }
+    for k, e in ipairs(st.choices) do
+        if e.id == id then
+            st.choices[k] = entry
+            return entry
+        end
+    end
+    table.insert(st.choices, entry)
+    return entry
+end
+
+function Director:choice(id)
+    for _, e in ipairs(game().state.choices) do
+        if e.id == id then
+            return e.index, e.answer
+        end
+    end
+    return nil
+end
+
+function Director:chapter(name)
+    if name ~= nil then
+        game().state.chapter = name
+    end
+    return game().state.chapter
+end
+
+-- the decisions of the chapter on one screen, like at the end of an episode
+function Director:recap(title, chapter)
+    self.runner:hideBox()
+    local Journal = require("game.ui.journal")
+    scene.push(Journal.Recap(title, chapter or game().state.chapter, function()
+        self.runner:continue()
+    end))
+    return yield()
 end
 
 -- the result of the stage, for scripts that end a mode by hand: s:finish({ win = true })

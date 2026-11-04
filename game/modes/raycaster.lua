@@ -684,6 +684,11 @@ function Raycaster:handleInput(dt)
         scene.push(Bag(self))
         return
     end
+    if input.pressed("journal") then
+        local Journal = require("game.ui.journal")
+        scene.push(Journal(self))
+        return
+    end
     if input.pressed("map") then
         self.showMap = not self.showMap
         audio.play(self.showMap and "card_flip" or "ui_back")

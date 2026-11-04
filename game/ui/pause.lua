@@ -1,4 +1,4 @@
--- Pause menu on top of any stage: continue, bag, volume, full screen, main menu.
+-- Pause menu on top of any stage: continue, bag, journal, volume, full screen, main menu.
 --
 --   scene.push(Pause(mode, { { label = "Сдаться", action = function() ... end } }))
 
@@ -27,6 +27,12 @@ function Pause:init(host, extra)
         table.insert(items, { label = "Сумка", action = function()
             local Bag = require("game.ui.inventory")
             scene.push(Bag(host))
+        end })
+    end
+    if host and host.def and host.def.kind ~= "title" then
+        table.insert(items, { label = "Дневник", action = function()
+            local Journal = require("game.ui.journal")
+            scene.push(Journal(host))
         end })
     end
     for _, item in ipairs(extra or {}) do

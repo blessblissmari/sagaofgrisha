@@ -4,7 +4,8 @@
 --
 --   box:say(speaker, { "page 1", "page 2" })   -- speaker = { id, name, color, voice, portrait }
 --   box:ask(speaker, "Вопрос?", { "Да", "Нет" })
---   local event, value = box:update(dt)       -- "done" | "choice", index
+--   box:ask(speaker, "Вопрос?", { "Да", { label = "Нет", disabled = true } }, { time = 6, default = 1 })
+--   local event, value, timeout = box:update(dt) -- "done" | "choice", index (timeout = the time ran out)
 --   box:draw()
 --   box.onEvent = function(speaker, name, value) end   -- {@hop}, {@emote=...} in the text
 
@@ -36,6 +37,8 @@ function DialogBox:init(opts)
     self.time = 0
     self.appear = 0
     self.fast = false -- novel "skip" mode: instant text
+    self.auto = false -- novel "auto" mode: a finished page turns by itself after a pause
+    self.autoTime = 0
 end
 
 local function blip(speaker)
@@ -86,19 +89,29 @@ function DialogBox:say(speaker, pages)
     self.state = "text"
 end
 
-function DialogBox:ask(speaker, prompt, options)
+-- options: strings or { label = "...", disabled = true }
+-- opts.time: seconds to answer (a bar runs out under the text), then opts.default is chosen
+function DialogBox:ask(speaker, prompt, options, opts)
+    opts = opts or {}
     self:open()
     self.speaker = speaker
     self.text = prompt and self:makeText(prompt) or nil
     local items = {}
     for i, option in ipairs(options) do
-        items[i] = { label = option }
+        if type(option) == "table" then
+            items[i] = { label = option.label or option[1], disabled = option.disabled }
+        else
+            items[i] = { label = option }
+        end
     end
     self.menu = Menu(items, {
         style = self.choiceStyle == "buttons" and "buttons" or "plain",
         width = self.choiceStyle == "buttons" and 340 or nil,
         font = theme.font("dialog"),
     })
+    self.timeMax = opts.time
+    self.timeLeft = opts.time
+    self.timeDefault = opts.default or #items
     self.state = "choice"
 end
 
@@ -122,7 +135,15 @@ function DialogBox:update(dt)
     end
     if self.state == "text" then
         self.text:update(dt)
-        if confirmPressed() or (self.fast and self.text:isDone()) then
+        local turn = false
+        if self.auto and self.text:isDone() then
+            self.autoTime = self.autoTime + dt
+            turn = self.autoTime > 1.2 + (self.text.total or 0) * 0.025
+        else
+            self.autoTime = 0
+        end
+        if confirmPressed() or (self.fast and self.text:isDone()) or turn then
+            self.autoTime = 0
             input.consume("confirm")
             input.mouse.pressed[1] = nil
             if not self.text:isDone() then
@@ -148,7 +169,20 @@ function DialogBox:update(dt)
         local chosen = self.menu:update(dt)
         if chosen then
             self.state = "idle"
+            self.timeLeft = nil
             return "choice", chosen
+        end
+        if self.timeLeft then
+            local before = self.timeLeft
+            self.timeLeft = self.timeLeft - dt
+            if math.ceil(self.timeLeft) < math.ceil(before) and before <= 3 and theme.sounds.move then
+                audio.play(theme.sounds.move, { pitch = 1.5 })
+            end
+            if self.timeLeft <= 0 then
+                self.timeLeft = nil
+                self.state = "idle"
+                return "choice", self.timeDefault, true
+            end
         end
     end
     return nil
@@ -183,6 +217,23 @@ function DialogBox:drawChoices(x, y, h)
     local my = y - mh - 8
     panel.draw(mx, my, w, mh)
     menu:draw(mx + 46, my + 16)
+end
+
+-- the time to answer: a bar along the bottom of the window, it turns red at the end
+function DialogBox:drawTimer(x, y, w, h)
+    local lg = love.graphics
+    local k = math.max(0, math.min(1, self.timeLeft / self.timeMax))
+    local left = self:textLeft()
+    local bx, by, bw, bh = x + left, y + h - 18, w - left - 34, 6
+    lg.setColor(theme.color("barFrame"))
+    lg.rectangle("fill", bx - 2, by - 2, bw + 4, bh + 4)
+    lg.setColor(theme.color("barBack"))
+    lg.rectangle("fill", bx, by, bw, bh)
+    local c = theme.color(k > 0.3 and "accent" or "red")
+    local blink = k <= 0.3 and (math.floor(self.time * 8) % 2 == 0) and 0.6 or 1
+    lg.setColor(c[1], c[2], c[3], blink)
+    lg.rectangle("fill", bx, by, math.floor(bw * k + 0.5), bh)
+    lg.setColor(1, 1, 1, 1)
 end
 
 function DialogBox:draw()
@@ -244,6 +295,9 @@ function DialogBox:draw()
     end
     if self.state == "choice" and (not self.text or self.text:isDone()) then
         self:drawChoices(x, y, h)
+        if self.timeLeft and self.timeMax then
+            self:drawTimer(x, y, w, h)
+        end
     end
     lg.setColor(1, 1, 1, 1)
 end

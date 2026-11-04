@@ -46,6 +46,28 @@ game.notes.letter = "Гриша!\n\nЕсли читаешь это — знач�
 --   game.skies.storm = { top = "#202838", horizon = "#606878", clouds = 0.9, band = "mountains" }
 
 -- =====================================================================================
+--  Инструменты рассказчика (все команды — в начале game/director.lua). Итог виден в
+--  дневнике [N] (или «Дневник» в паузе): задания, решения, отношения, таланты, энциклопедия.
+--    s:think("...")                          мысли героя: имя «Гриша (про себя)», приглушённый цвет
+--    s:ask(вопрос, ответы, кто, { id = "quake", time = 6, default = 3 })
+--        id   — решение попадёт в дневник и в итоги главы, позже s:choice("quake") вернёт номер
+--        time — выбор на время (полоска тает), не успел — выбран ответ default
+--    ответ может быть таблицей (номер всё равно — место в списке):
+--        { "Отдать морковку", requires = "carrot", take = true }  серый «(нужно: Морковь)», если нет
+--        { "Выбить дверь", check = { "strength", 9 } }            «[Сила] Выбить дверь 42%» + бросок
+--        { "Соврать", flag = "lied", like = { "bunny", -1 }, remember = { "bunny", "lie", "ты соврал" } }
+--        { "Секрет", hidden = not s:flag("knows") }                 ответа просто нет
+--        local i, ok, late = s:ask(...)   -- ok = результат проверки, late = время вышло
+--    s:check("wits", 8, "Найти тайник")       бросок 2d6 + талант против сложности -> true/false
+--    s:talent("charm", 1)                     талант растёт (таланты: game/data/talents.lua)
+--    s:remember("bunny", "id", "что было")    в углу «Кашка запомнит это.»; s:remembers("bunny", "id")
+--    s:like("bunny", 1) / s:affinity("bunny") отношения: «Кашка одобряет» / «не одобряет»
+--    s:journal("id", "Задание") / s:journalDone("id")      задания
+--    s:learn("people", "id", "Имя", "Описание")             энциклопедия: people, places, monsters, things
+--    s:chapter("Глава 2") / s:recap("Итоги главы")          глава (s:title в новелле ставит её сам)
+-- =====================================================================================
+
+-- =====================================================================================
 --  Главное меню
 -- =====================================================================================
 game.stage "menu" {
@@ -94,7 +116,7 @@ game.stage "menu" {
 game.stage "prologue" {
     kind = "novel", background = "forest", weather = "leaves", music = "calm",
     script = function(s)
-        s:title("Глава 1", "Лес у моря")
+        s:title("Глава 1", "Лес у моря")      -- заодно это глава дневника: «Глава 1. Лес у моря»
         s:show("grisha", { at = "left" })
         s:show("bunny", { at = "right" })
         s:say("grisha", "Привет, {accent}Кашка{/}! {wave}Смотри, какой лес!{/} Тут {shake}страшновато{/}...")
@@ -103,28 +125,52 @@ game.stage "prologue" {
         s:emotion("grisha", "anger")
         s:say("grisha", "{@shake}Что?! Опять морковка?!")
         s:emote("bunny", "sweat")
-        local a = s:ask("bunny", "Ну пожалуйста... Пойдём?", { "Да, пойдём", "Нет", "Может быть" })
+        -- id: решение попадёт в дневник ([N] -> «Решения») и в итоги главы (s:recap)
+        local a = s:ask("bunny", "Ну пожалуйста... Пойдём?", { "Да, пойдём", "Нет", "Может быть" }, { id = "carrot_walk" })
         if a == 1 then
             s:closeup("bunny")
             s:emotion("bunny", "love")
             s:say("bunny", "Спасибо!{@hop} Ты лучший!")
+            s:like("bunny", 1)                 -- отношения: в углу «Кашка одобряет»
             s:closeup()
         elseif a == 2 then
             s:emotion("bunny", "sad")
             s:say("bunny", "{slow}Ну и ладно...{/}")
+            s:like("bunny", -1)
             s:emotion("grisha", "sweat")
             s:say("grisha", "Ладно-ладно, пойдём!")
         else
             s:emotion("grisha", "think")
+            s:think("Морковка, морковка... {p}Хоть бы раз грибы.")   -- мысли героя
             s:say("grisha", "Хм... {p=1}Ну, может быть.")
         end
+        s:journal("carrot", "Найти морковку для Кашки")       -- задание в дневнике
+        s:learn("people", "bunny", "Кашка", "Серая вислоухая крольчиха. Любит морковку, покер и приключения — именно в таком порядке.")
         s:bg("cliffs", "starwars")
         s:say(nil, "{slow}Тем временем у моря...{/}")
         s:emotion("grisha", "surprise")
         s:quake()
         s:say("grisha", "{@shake}Земля трясётся!")
         s:emotion("bunny", "fear")
-        s:say("bunny", "Бежим на остров!")
+        -- выбор на время: полоска под ответами тает, не успел — берётся default
+        local b = s:ask("bunny", "{shake}Гриша!{/} Что делать?!", { "Схватить Кашку и бежать", "Бежать первым", "Замереть" },
+            { time = 6, default = 3, id = "quake" })
+        if b == 1 then
+            s:emotion("bunny", "love")
+            s:say("bunny", "{wave}Ой!{/} Ты меня несёшь?! {p}Мой герой!")
+            s:remember("bunny", "quake_saved", "в землетрясение Гриша вынес её на руках")  -- «Кашка запомнит это.»
+            s:like("bunny", 1)
+        elseif b == 2 then
+            s:emotion("bunny", "anger")
+            s:say("bunny", "Эй! {shake}Подожди меня!{/}")
+            s:remember("bunny", "quake_left", "в землетрясение Гриша убежал первым")
+            s:like("bunny", -1)
+        else
+            s:think("Ноги не слушаются... {p}Кашка тянет меня за штанину.")
+            s:say("bunny", "{shake}Очнись!{/} Бежим на остров!")
+        end
+        s:journal("island", "Переждать землетрясение на острове")
+        s:recap("Итоги главы")                   -- решения главы на одном экране
         s:go("island", "page")
     end,
 }
@@ -180,30 +226,83 @@ game.stage "transitions" {
 game.stage "island" {
     kind = "topdown", map = "assets/maps/island.tmx", music = "calm",
     battle = "fight_day",
+    -- при входе на остров: задания дневника (без диалога — сразу можно бегать)
+    script = function(s)
+        if s:once("island_tasks") then
+            s:chapter("Глава 2. Остров")
+            s:journalDone("island")
+            s:journal("dungeon", "Заглянуть в подземелье на севере острова")
+        end
+    end,
     triggers = {
         cave = { "cave" },
         -- дверь подземелья заперта: мини-игра «Взлом» (game/modes/lockpick.lua)
+        -- ответ с проверкой таланта: «[Сила] Выбить дверь плечом 42%» — бросок 2d6 + Сила >= 9
         dungeon = function(s)
             if not s:flag("dungeon_open") then
-                local a = s:ask("grisha", "Заперто. {p}Замок старый, ржавый... Вскрыть?", { "Вскрыть", "Уйти" })
-                if a ~= 1 then return end
-                local r = s:play("lockpick", { goal = 1, lives = 3, level = 1 })
-                if not r.win then
-                    s:say("grisha", "{shake}Хрусь!{/} Отмычки кончились. {p}Потом ещё попробую.")
-                    return
+                s:learn("places", "dungeon", "Подземелье", "Старая дверь на севере острова. Внутри темно, сыро и полно слизней.")
+                local a, ok = s:ask("grisha", "Заперто. {p}Замок старый, ржавый...",
+                    { "Вскрыть отмычкой", { "Выбить дверь плечом", check = { "strength", 9 } }, "Уйти" })
+                if a == 3 then return end
+                if a == 2 then
+                    if not ok then
+                        s:hurt(1)
+                        s:say("grisha", "{shake}Ай!{/} Дверь крепче плеча. {p}Лучше отмычкой.")
+                        return
+                    end
+                    s:say("grisha", "{shake}Бам!{/} {p}Петли не выдержали.")
+                else
+                    local r = s:play("lockpick", { goal = 1, lives = 3, level = 1 })
+                    if not r.win then
+                        s:say("grisha", "{shake}Хрусь!{/} Отмычки кончились. {p}Потом ещё попробую.")
+                        return
+                    end
+                    s:say("grisha", "{wave}Щёлк!{/} Открыто.")
                 end
                 s:flag("dungeon_open", true)
-                s:say("grisha", "{wave}Щёлк!{/} Открыто.")
+                s:journalDone("dungeon")
             end
             s:go("dungeon", "iris")
         end,
+        -- табличка у моста: проверка Смекалки по желанию игрока
+        sign = function(s)
+            s:say("sign", "«Мост в никуда. Вход платный: одна партия в тетрис.»")
+            s:journal("bridge", "Пройти по мосту: сторож просит партию в тетрис")
+            if s:once("sign_small_print") then
+                local a, ok = s:ask("grisha", "Внизу что-то мелко нацарапано...",
+                    { { "Разобрать надпись", check = { "wits", 8 } }, "Пройти мимо" })
+                if a == 1 and ok then
+                    s:say("grisha", "{accent}«С края моста клюёт лучше всего»{/}. {p}Запомню.")
+                    s:learn("places", "bridge", "Мост в никуда", "Ведёт прямо в море. Сторож пускает за партию в тетрис, а с края отлично клюёт.")
+                elseif a == 1 then
+                    s:think("Буквы пляшут... {p}Ладно, не очень-то и хотелось.")
+                end
+            end
+        end,
+        -- ответ, для которого нужен предмет: без морковки он серый «(нужно: Морковь)»
         sacks = function(s)
-            s:say("grisha", "Мешки с мукой. {p}И... {accent}морковка{/}!")
+            local offer = "Сыграем в мой покер? {p}На морковку!"
             if s:once("sacks_carrot") then
+                s:say("grisha", "Мешки с мукой. {p}И... {accent}морковка{/}!")
                 s:give("carrot", 1)
+                local c = s:ask("bunny", "{wave}Морковка!{/} {p}Это мне?", {
+                    { "Отдать Кашке", requires = "carrot", take = true, like = { "bunny", 1 },
+                        remember = { "bunny", "carrot_gift", "Гриша отдал ей морковку из мешка" } },
+                    "Оставлю себе",
+                }, { id = "sacks_carrot" })
+                if c == 1 then
+                    s:say("bunny", "{rainbow}Хрум-хрум!{/} {p}Самая вкусная!")
+                    s:journalDone("carrot")
+                    offer = "А теперь... {p}сыграем в мой покер? На морковку!"
+                else
+                    s:like("bunny", -1)
+                    offer = "{slow}Жадина.{/} {p}Тогда отыграю её в покер!"
+                end
+            else
+                s:say("grisha", "Мешки с мукой.")
             end
             -- Кашка зовёт в свой покер (game/modes/cards.lua); prize — что дают за победу
-            local a = s:ask("bunny", "Сыграем в мой покер? {p}На морковку!", { "Сыграем", "Потом" })
+            local a = s:ask("bunny", offer, { "Сыграем", "Потом" })
             if a == 1 then
                 local r = s:play("cards", { level = 1, prize = { carrot = 2 } })
                 if r.win then
@@ -222,7 +321,15 @@ game.stage "island" {
                 if a == 1 then
                     local r = s:play("fishing", { goal = 2, level = 1 })
                     if r.win then
-                        s:say("bunny", "{wave}Рыбка!{/} {p}Чур, мне хвостик.")
+                        s:journalDone("fish")
+                        -- последствия: Кашка помнит, как было в землетрясение
+                        if s:remembers("bunny", "quake_left") then
+                            s:say("bunny", "{wave}Рыбка!{/} {p}Хвостик мой. {p}Ты мне должен — за землетрясение.")
+                        elseif s:affinity("bunny") >= 2 then
+                            s:say("bunny", "{wave}Рыбка!{/} {p}Давай пополам — как друзья.")
+                        else
+                            s:say("bunny", "{wave}Рыбка!{/} {p}Чур, мне хвостик.")
+                        end
                     else
                         s:say("grisha", "Сорвалась... {p}В другой раз.")
                     end
@@ -235,6 +342,9 @@ game.stage "island" {
                 local r = s:play("tetris")
                 if r.win then
                     s:flag("bridge_paid", true)
+                    s:journalDone("bridge")
+                    s:journal("fish", "Порыбачить с края моста")
+                    s:learn("people", "keeper", "Сторож моста", "Пускает на мост только тех, кто сыграет с ним в тетрис. Сам играет так себе.")
                     s:say("grisha", "{wave}Есть!{/} Три линии — и мост мой. {p}С края, наверное, отлично клюёт.")
                     s:give("coin", 5)
                 else

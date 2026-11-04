@@ -41,6 +41,7 @@ local game = {
             skills = { "attack", "smash", "skills", "item", "defend", "flee" },
             growth = { hp = 5, attack = 1.1, defense = 0.6, speed = 0.15 } },
         unit = "grisha",
+        speaker = "grisha", -- his id in game.characters: s:think() is his inner voice
     },
     sprites = require("game.data.sprites"),
     characters = require("game.data.characters"),
@@ -48,6 +49,7 @@ local game = {
     mobs = require("game.data.mobs"),
     pets = require("game.data.pets"),
     skills = require("game.data.skills"),
+    talents = require("game.data.talents"),
     statuses = require("game.data.statuses"),
     -- battle settings (story.lua can change them):
     --   atb     "active": the timeline creeps on (slowly) while you choose; "wait": it stops
@@ -165,6 +167,22 @@ function game.speaker(who)
     return s
 end
 
+-- what was said: the "Разговоры" tab of the journal ([L] in the novel). Not saved.
+game.history = {}
+function game.remember(speaker, text, kind)
+    local pages = type(text) == "table" and text or { text }
+    local parts = {}
+    for _, page in ipairs(pages) do
+        local t = tostring(page):gsub("{[^{}]*}", "")
+        table.insert(parts, t)
+    end
+    table.insert(game.history, { who = speaker and speaker.name, color = speaker and speaker.color,
+        text = table.concat(parts, " "), kind = kind })
+    while #game.history > 150 do
+        table.remove(game.history, 1)
+    end
+end
+
 -- state ----------------------------------------------------------------------------
 
 local Inventory = engine.Inventory
@@ -177,16 +195,23 @@ function game.newGame()
         inventory = Inventory(game.items, p.slots or 24),
         flags = {}, counters = {}, abilities = {}, party = {}, pets = {},
         collected = {}, defeated = {}, equipment = {}, quests = {},
-        codex = {},   -- collections: codex.fish[id] = { count, best }, codex.people[id] = true...
-        journal = {}, -- the story so far: { text, chapter }, see s:journal()
+        codex = {},   -- collections: codex.fish[id] = { count, best }, codex.people[id] = { name, text }...
+        journal = {}, -- tasks: { id, text, done, chapter }, see s:journal()
         memory = {},  -- what the characters remember: memory[who][what] = true (s:remember)
-        affinity = {}, -- how much the characters like the hero: affinity[who] = number
+        affinity = {}, -- how much the characters like the hero: affinity[who] = number (s:like)
+        choices = {}, -- decisions: { id, text, answer, index, chapter } (s:ask with id = ...)
+        talents = {}, -- talents for checks: talents.wits = 2 (s:check, s:talent)
+        chapter = nil, -- the current chapter (s:title in the novel sets it)
         hero = util.deepCopy(p.battle),
     }
     st.hero.maxHp = st.hero.hp
     st.hero.level, st.hero.xp = p.level or 1, 0
     st.hero.bp = 1
     game.state = st
+    game.history = {}
+    for id, t in pairs(game.talents or {}) do
+        st.talents[id] = t.start or 0
+    end
     for id, n in pairs(p.items or {}) do
         st.inventory:add(id, n)
     end
@@ -402,6 +427,7 @@ function game.save()
         party = st.party, pets = st.pets, collected = st.collected, defeated = st.defeated,
         hero = st.hero, equipment = st.equipment, quests = st.quests,
         codex = st.codex, journal = st.journal, memory = st.memory, affinity = st.affinity,
+        choices = st.choices, talents = st.talents, chapter = st.chapter,
     }
     save.write("savegame", data)
 end

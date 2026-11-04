@@ -24,6 +24,9 @@ function Runner:init(script, host, args, onDone)
     end
     self.director = Director(script, host, self)
     self.name = "script"
+    -- the keys of the stage below work in its dialogues too ([A] auto, [L] history in the novel)
+    self.keymap = host and host.keymap or nil
+    self.controls = host and host.controls or nil
 end
 
 function Runner:enter()
@@ -76,10 +79,11 @@ end
 
 function Runner:say(speaker, text)
     self.box:say(speaker, text)
+    require("game").remember(speaker, text)
 end
 
-function Runner:ask(speaker, prompt, options)
-    self.box:ask(speaker, prompt, options)
+function Runner:ask(speaker, prompt, options, opts)
+    self.box:ask(speaker, prompt, options, opts)
 end
 
 function Runner:wait(seconds)
@@ -117,11 +121,11 @@ function Runner:update(dt)
         return
     end
     if self.box.state ~= "hidden" and self.box.state ~= "idle" then
-        local event, value = self.box:update(dt)
+        local event, value, timeout = self.box:update(dt)
         if event == "done" then
             self:continue()
         elseif event == "choice" then
-            self:continue(value)
+            self:continue(value, timeout)
         end
     end
 end

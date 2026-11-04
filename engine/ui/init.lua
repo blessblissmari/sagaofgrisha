@@ -165,11 +165,14 @@ end
 
 local toasts = {}
 
--- opts: icon (name in assets/sprites/icons), time, color
+-- opts: icon (name in assets/sprites/icons), time, color,
+--       side = "right" (a notice in the top right corner: "Кашка запомнит это."),
+--       portrait = { image, quad } (a face in the notice, game.resolvePicture makes it)
 function ui.toast(text, opts)
     opts = opts or {}
-    table.insert(toasts, { text = text, icon = opts.icon, time = opts.time or 2.2, t = 0, color = opts.color })
-    while #toasts > 4 do
+    table.insert(toasts, { text = text, icon = opts.icon, time = opts.time or (opts.side and 3.2 or 2.2), t = 0,
+        color = opts.color, side = opts.side, portrait = opts.portrait })
+    while #toasts > 6 do
         table.remove(toasts, 1)
     end
 end
@@ -184,23 +187,51 @@ function ui.update(dt)
     end
 end
 
+local function drawPortrait(p, x, y, size, alpha)
+    local _, _, qw, qh = p.quad:getViewport()
+    local s = math.min(size / qw, size / qh)
+    love.graphics.setColor(1, 1, 1, alpha)
+    love.graphics.draw(p.image, p.quad, math.floor(x + (size - qw * s) / 2), math.floor(y + (size - qh * s) / 2), 0, s, s)
+end
+
 function ui.drawToasts()
     local font = theme.font("small")
-    local y = 16
+    local y, ry = 16, 16
     local th = math.max(34, font:getHeight() + 12)
+    -- the toasts in the middle keep away from the notices on the right
+    local rightW = 0
+    for _, t in ipairs(toasts) do
+        if t.side == "right" then
+            rightW = math.max(rightW, font:getWidth(t.text) + 32 + (t.portrait and 52 or (t.icon and 30 or 0)))
+        end
+    end
+    local limit = rightW > 0 and screen.width - rightW - 28 or screen.width
     for _, t in ipairs(toasts) do
         local alpha = math.min(1, t.t * 6, (t.time - t.t) * 3)
-        local iconW = t.icon and 30 or 0
+        local h = t.portrait and math.max(th, 52) or th
+        local iconW = t.portrait and 52 or (t.icon and 30 or 0)
         local w = font:getWidth(t.text) + 32 + iconW
-        local x = math.floor((screen.width - w) / 2)
-        local slide = math.floor((1 - math.min(1, t.t * 6)) * -12)
-        love.graphics.setColor(1, 1, 1, alpha)
-        ui.panel.draw(x, y + slide, w, th, "small")
-        if t.icon then
-            ui.icon(t.icon, x + 12, y + slide + (th - 24) / 2, 0.75, alpha)
+        local x, ty
+        if t.side == "right" then
+            -- slides in from the right edge
+            local slide = math.floor((1 - math.min(1, t.t * 5)) * (w + 20))
+            x, ty = screen.width - w - 16 + slide, ry
+            ry = ry + h + 6
+        else
+            x, ty = math.floor((screen.width - w) / 2), y + math.floor((1 - math.min(1, t.t * 6)) * -12)
+            if x + w > limit then
+                x = math.max(12, limit - w)
+            end
+            y = y + h + 6
         end
-        ui.print(t.text, x + 16 + iconW, y + slide + (th - font:getHeight()) / 2, { font = font, color = t.color or "ink", alpha = alpha })
-        y = y + th + 6
+        love.graphics.setColor(1, 1, 1, alpha)
+        ui.panel.draw(x, ty, w, h, "small")
+        if t.portrait then
+            drawPortrait(t.portrait, x + 10, ty + 6, h - 12, alpha)
+        elseif t.icon then
+            ui.icon(t.icon, x + 12, ty + (h - 24) / 2, 0.75, alpha)
+        end
+        ui.print(t.text, x + 16 + iconW, ty + (h - font:getHeight()) / 2, { font = font, color = t.color or "ink", alpha = alpha })
     end
     love.graphics.setColor(1, 1, 1, 1)
 end

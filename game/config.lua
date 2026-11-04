@@ -23,6 +23,7 @@ return {
         -- in the browser [Esc] also leaves the full screen, so [P] comes first there
         pause = web and { "p", "escape" } or { "escape", "p" },
         inventory = { "i", "tab" },
+        journal = { "n" },              -- tasks, decisions, relations, the encyclopedia
         skip = { "lctrl", "rctrl" },    -- hold to fast-forward dialogues
         debug = { "f1" },
         fullscreen = { "f11" },
