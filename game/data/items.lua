@@ -79,7 +79,7 @@ return {
             .. "а за ним — пещеру. Не бойся слизней: они больше шумят, чем кусаются.»\n\n{faded}— без подписи{/}",
         description = "Письмо без подписи. [Enter] — прочитать." },
     map = { name = "Карта", icon = "map", kind = "key",
-        description = "Карта острова. Мир круглый: уйдёшь на запад — придёшь с востока." },
+        description = "Старая карта мира. Мир круглый: уйдёшь на запад — придёшь с востока." },
 
     -- abilities (platformer): picked up as glowing orbs
     double_jump = { name = "Двойной прыжок", icon = "skill_run", ability = "double_jump",

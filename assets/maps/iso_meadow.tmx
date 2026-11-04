@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.2" orientation="isometric" renderorder="right-down" width="32" height="32" tilewidth="32" tileheight="16" infinite="0" backgroundcolor="#1b2238" nextlayerid="11" nextobjectid="22">
+<map version="1.10" tiledversion="1.10.2" orientation="isometric" renderorder="right-down" width="32" height="32" tilewidth="32" tileheight="16" infinite="0" backgroundcolor="#1b2238" nextlayerid="11" nextobjectid="23">
  <properties>
   <property name="music" value="calm"/>
   <property name="name" value="Луг"/>
@@ -193,6 +193,9 @@
   <object id="2" name="top" x="152" y="136">
    <point/>
   </object>
+  <object id="22" name="from_world" x="88" y="72">
+   <point/>
+  </object>
  </objectgroup>
  <objectgroup id="7" name="Mobs">
   <object id="3" name="slime" x="200" y="360">
@@ -328,7 +331,7 @@
    <properties>
     <property name="interact" type="bool" value="true"/>
     <property name="prompt" value="Уйти с луга"/>
-    <property name="go" value="menu"/>
+    <property name="go" value="world"/>
    </properties>
   </object>
  </objectgroup>

@@ -185,6 +185,9 @@ function World:init(def)
     self.nextBattle = self:battleDistance()
     self.safeTime = 2.5        -- no battles right after arriving
     self.titleAlpha = 0
+    -- from now on a saved game returns to this very spot (st.world), not to the arrival spawn
+    self:remember()
+    st.spawn = nil
 end
 
 function World:enter()
@@ -971,10 +974,11 @@ function World:followers(dt)
     local h = self.hero
     for i, p in ipairs(self.pets) do
         if self.inBoat then
-            -- in the boat, behind Гриша
-            local b = self.boat
-            local bx, bz = h.x + math.sin(h.heading) * -0.32, h.z - math.cos(h.heading) * -0.32
-            p.x, p.z, p.y = bx + (i - 1) * 0.1, bz, self:boatY() + 0.1
+            -- in the boat, at the bow, looking ahead
+            local ahead = 0.3 + (i - 1) * 0.12
+            p.x = h.x + math.sin(h.heading) * ahead
+            p.z = h.z - math.cos(h.heading) * ahead
+            p.y = self:boatY() + 0.1
             p.heading = h.heading
             p.sprite:play("idle", facing(p.heading, self.yaw))
         else
@@ -1023,7 +1027,7 @@ function World:checkPlaces()
         end
         return
     end
-    if near and nearD < (near.radius or 0.5) + 1.0 then
+    if near and nearD < (near.radius or 0.5) + 1.25 then
         self.prompt = (near.prompt and near.prompt ~= "") and near.prompt or "Войти"
         self.nearby = near
         self.action = function()

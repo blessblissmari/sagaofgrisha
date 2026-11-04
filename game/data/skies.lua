@@ -34,7 +34,7 @@ return {
     -- round edge of the world
     world = {
         top = "#3f7fd0", horizon = "#cfe4f2", ground = "#cfe4f2", groundHorizon = "#cfe4f2",
-        sun = { yaw = 2.6, pitch = 0.2, color = "#fff6d8" }, clouds = 0.55, grid = 0,
+        sun = { yaw = 2.6, pitch = 0.75, color = "#fff6d8", size = 0.03 }, clouds = 0.55, grid = 0,
     },
     dungeon = {
         top = "#07070b", horizon = "#2a2230", ground = "#141018", groundHorizon = "#2e2632",

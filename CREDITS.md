@@ -49,14 +49,19 @@
 | Рыбалка: рыбы | `sprites/arcade/fish.png` | [Sea World Pack](https://opengameart.org/content/sea-world-pack) | avodhel | CC0 |
 | Карты: Парочки, Покер Кашки | `sprites/cards/` (лист разрезан на карты, пустая карта для шутов) | [Asset Pack Pixel Poker](https://opengameart.org/content/asset-pack-pixel-poker) | Chasersgaming | CC0 |
 | Кости | `sprites/arcade/dice_faces.png`, `dice_roll.png` | [32x32 pixel d6 dice roll & results](https://opengameart.org/content/32x32-pixel-d6-dice-roll-results) | adhochero | CC0 |
-| Лица соперников в костях | `sprites/portraits/rpg_portraits.png` | [RPG portraits](https://opengameart.org/content/rpg-portraits) | Buch | CC0 |
+| Лица соперников в костях и жителей карты мира | `sprites/portraits/rpg_portraits.png` | [RPG portraits](https://opengameart.org/content/rpg-portraits) | Buch | CC0 |
 | Звёздный патруль; взрывы во всей игре | `sprites/shmup/` | [Warped Space Shooter](https://opengameart.org/content/warped-space-shooter), [Space Ship Shooter Pixel Art Assets](https://opengameart.org/content/space-ship-shooter-pixel-art-assets) | ansimuz | CC0 |
 | Гонка: машины | `sprites/racing/car_*.png` (перекрашены) | [Cars Top Down View](https://opengameart.org/content/cars-top-down-view) | Ian Peter | CC0 |
 | Гонка: дорога, трава, деревья, дома | остальное в `sprites/racing/` | [isaiah658's Pixel Pack #1](https://opengameart.org/content/isaiah658s-pixel-pack-1) | isaiah658 | CC0 |
 | Тактика: гексы поля | `sprites/hex/` | [Hexset v.01.1](https://opengameart.org/content/hexset-v011-hex-pixel-art-terrain-tileset) | Miguel Bartelsman (mbartelsm) | CC0 |
+| Карта мира (3D): стены и ворота замка, башни, маяк, шахта, причалы, бочки, ящики, заборы, колонны руин, деревья; текстуры воды и досок лодки | `models/kenney/` (OBJ + `Textures/`) | [Retro Medieval Kit](https://opengameart.org/content/retro-medieval-kit) | Kenney | CC0 |
+| Карта мира: дома на острове и в деревне | `models/psx/` | [PSX style medieval house](https://opengameart.org/content/psx-style-medieval-house) | _Creature_ | CC0 |
+| Карта мира: лодка | `models/boat/rowboat.obj` (текстура — доски из Retro Medieval Kit) | [Simple Rowboat](https://opengameart.org/content/simple-rowboat) | willy56 | CC-BY 4.0 |
+| Карта мира: земли (трава, луг, песок, камень, снег, булыжник) | тайлы острова из `sprites/PathAndObjects.png` и `sprites/ground_tiles.png`, перекрашены | см. строки «Остров» выше | Zabin, Leonard Pabin | CC-BY-SA 3.0 / CC-BY 3.0 |
 
-Небо-сфера в боях, переходы между сценами, вода, туман подземелья, замок во «Взломе», окна в стиле
-Final Fantasy — нарисованы кодом (шейдеры в `assets/shaders/`).
+Небо-сфера в боях и на карте мира, переходы между сценами, вода, туман подземелья, замок во «Взломе», окна в стиле
+Final Fantasy, PS1-эффекты карты мира (низкое разрешение, дрожание вершин, аффинные текстуры, дизеринг) —
+нарисованы кодом (шейдеры в `assets/shaders/`). Кашка на карте мира — уменьшенный рисунок `td_pet.png`.
 
 ## Звук
 

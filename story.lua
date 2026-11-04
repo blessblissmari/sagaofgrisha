@@ -237,6 +237,13 @@ game.stage "island" {
     end,
     triggers = {
         cave = { "cave" },
+        -- лодка у южного берега: в большой мир (карта мира 3D, stage "world")
+        boat = function(s)
+            local a = s:ask("bunny", "Лодка! {p}Поплывём в большой мир?", { "Плывём!", "Не сейчас" })
+            if a == 1 then
+                s:go("world", { spawn = "boat", transition = "iris" })
+            end
+        end,
         -- дверь подземелья заперта: мини-игра «Взлом» (game/modes/lockpick.lua)
         -- ответ с проверкой таланта: «[Сила] Выбить дверь плечом 42%» — бросок 2d6 + Сила >= 9
         dungeon = function(s)
@@ -383,8 +390,21 @@ game.stage "dungeon" {
 game.stage "meadow" {
     kind = "iso", map = "assets/maps/iso_meadow.tmx", music = "calm",
     battleMusic = "arcade",
-    triggers = { exit = { "menu", transition = "iris" } },
+    triggers = { exit = { "world", spawn = "meadow", transition = "iris" } },
 }
+
+-- бой из сценария на карте мира: проиграл или сбежал — Гриша приходит в себя на месте
+local function worldFight(s, enemies)
+    local r = s:battle(enemies)
+    if r and r.win then
+        return true
+    end
+    s:heal()
+    if not (r and r.fled) then
+        s:think("Уф... {p}Еле ноги унесли.")
+    end
+    return false
+end
 
 -- =====================================================================================
 --  Карта мира в 3D (как в Final Fantasy VII-IX): маленькая круглая планета — уйдёшь за
@@ -404,9 +424,223 @@ game.stage "world" {
         desert = { "crab", "beetle" },
         snow = { "ghost", "blob_blue" },
     },
+    -- первый раз в большом мире
+    script = function(s)
+        if s:once("world_intro") then
+            s:chapter("Глава 3. Большой мир")
+            s:think("Горы, леса, дым из труб... {p}Мир куда больше нашего острова.")
+            s:say("bunny", "Говорят, он {accent}круглый{/}! {p}Уйдёшь на восток — придёшь с запада.")
+            s:learn("places", "world", "Большой мир",
+                "Маленькая круглая планета: уйдёшь за край — придёшь с другой стороны. [M] — карта, [Q/E] — повернуть камеру.")
+            s:journal("village", "Найти деревню Морковкино на южном берегу")
+        end
+    end,
+    -- места на карте (Places в Tiled): имя -> что будет по [F]
     triggers = {
         island = { "island", spawn = "from_world" },
         meadow = { "meadow", spawn = "from_world", transition = "iris" },
+
+        -- деревня: староста, задания и кости (game/modes/dice.lua)
+        village = function(s)
+            s:learn("places", "village", "Морковкино",
+                "Деревня огородников на южном берегу. Староста — Дед Архип, лучший игрок в кости в округе.")
+            s:journalDone("village")
+            if s:once("village_hello") then
+                s:say("elder", "Ишь ты, гости! {p}С острова, что ли? {p}Я Архип, староста Морковкина.")
+                s:learn("people", "elder", "Дед Архип", "Староста Морковкина. Ворчит, но добрый. Обожает кости.")
+                local a = s:ask("elder", "Слизни совсем распоясались: их король засел в замке на севере. {p}Поможешь старику?", {
+                    { "Помогу!", like = { "bunny", 1 } },
+                    "А что мне за это?",
+                    "Мне бы морковки...",
+                }, { id = "elder_help" })
+                if a == 1 then
+                    s:say("elder", "{wave}Вот молодец!{/} {p}Сходи на маяк, к Нилу: сверху он всё видит.")
+                elseif a == 2 then
+                    s:say("elder", "Хе! Деловой. {p}Обыграешь меня в кости — будут тебе монеты.")
+                else
+                    s:say("bunny", "{wave}Морковки!{/} {p}Да-да, морковки!")
+                    s:say("elder", "Морковки у нас полдеревни. {p}Обыграешь в кости — получишь.")
+                end
+                s:journal("castle", "Разузнать, как попасть в Замок Короля Слизней")
+                s:journal("lighthouse", "Поговорить со смотрителем маяка на северо-востоке")
+            end
+            local a = s:ask("elder", "Ну что, сыграем в кости? {p}До 1500 очков.",
+                { "Сыграть в кости", "Расспросить о мире", "Уйти" })
+            if a == 1 then
+                local r = s:play("dice", { goal = 1500, opponent = "old", prize = { coin = 10, carrot = 1 } })
+                if r.win then
+                    s:say("elder", "Ну уважил старика! {p}Держи монеты. И морковку — для ушастой.")
+                else
+                    s:say("elder", "Хе-хе! Молод ещё. {p}Приходи отыгрываться.")
+                end
+            elseif a == 2 then
+                s:say("elder", "На севере — замок Короля Слизней. {p}На западе — старая башня, там отшельник звёзды считает.")
+                s:say("elder", "В горах — заброшенная шахта, на востоке — руины. {p}А на маяке живёт Нил, рыбак знатный.")
+            end
+        end,
+
+        -- замок: ворота закрыты; проверки талантов и предмет в ответах
+        castle = function(s)
+            s:learn("places", "castle", "Замок Короля Слизней", "Серые стены на севере. Ворота заперты, на стене — стражник.")
+            if s:once("castle_hello") then
+                s:say("guard", "Стой! Кто идёт? {p}Король Слизней никого не принимает!")
+                s:learn("people", "guard", "Стражник", "Охраняет ворота замка. Служит Королю Слизней за жалованье и очень любит морковку.")
+            end
+            local a, ok = s:ask("guard", "Чего надо?", {
+                { "Уговорить открыть ворота", check = { "charm", 10 } },
+                { "Выбить ворота", check = { "strength", 11 } },
+                { "Угостить морковкой", requires = "carrot", take = true, hidden = s:flag("mine_tunnel") },
+                "Уйти",
+            })
+            if a == 1 then
+                if ok then
+                    s:say("guard", "Эх... ладно, по секрету: {p}король {accent}боится воды{/}. {p}Но ворота не открою — приказ!")
+                    s:flag("king_fears_water", true)
+                    s:learn("monsters", "slime_king", "Король Слизней", "Засел в замке на севере. Стражник проболтался: боится воды.")
+                else
+                    s:say("guard", "Ишь, болтун! {p}Проваливай, пока цел.")
+                end
+            elseif a == 2 then
+                if ok then
+                    s:say("grisha", "{shake}БУМ!{/} {p}Ворота дрогнули...")
+                    s:say("guard", "Тревога! {p}Слизни, к воротам!")
+                    if worldFight(s, { "blob_red", "slime", "blob_red" }) then
+                        s:think("Ворота держатся. {p}Силой их не взять — нужен другой путь.")
+                    end
+                else
+                    s:hurt(1)
+                    s:say("grisha", "{shake}Ай!{/} {p}Ворота крепче плеча.")
+                end
+            elseif a == 3 then
+                s:say("guard", "Морковка? {p}{slow}Хрум.{/} {p}Слушай: в старой шахте есть ход прямо под замок.")
+                s:flag("mine_tunnel", true)
+                s:journalDone("castle")
+                s:journal("mine", "Найти в заброшенной шахте ход под замок")
+            end
+        end,
+
+        -- башня: отшельник и загадка (проверка Смекалки)
+        tower = function(s)
+            s:learn("places", "tower", "Старая башня", "Башня на западе, вся в плюще. Наверху живёт отшельник Фома и считает звёзды.")
+            if s:flag("tower_riddle") then
+                s:say("hermit", "Восемьсот сорок одна... восемьсот сорок две... {p}Не мешай, юноша.")
+                return
+            end
+            if s:once("tower_hello") then
+                s:say("hermit", "Тише, тише... {p}Я считаю звёзды. {p}Сбился. Опять сначала.")
+                s:learn("people", "hermit", "Отшельник Фома", "Живёт в старой башне и третий год считает звёзды. Любит загадки.")
+            end
+            local a, ok = s:ask("hermit", "Отгадаешь загадку — дам кое-что. {p}Что круглое, а края у него нет?", {
+                { "Подумать как следует", check = { "wits", 8 } },
+                "Тарелка!",
+                "Не знаю",
+            })
+            if a == 1 and ok then
+                s:say("grisha", "Наш мир! {p}Уходишь за край — приходишь с другой стороны.")
+                s:say("hermit", "{wave}Верно!{/} {p}Держи старую карту. Только не потеряй.")
+                s:give("map", 1)
+                s:talent("wits", 1)
+                s:flag("tower_riddle", true)
+            elseif a == 1 then
+                s:think("Круглое без края... {p}Голова кругом.")
+            elseif a == 2 then
+                s:say("hermit", "У тарелки есть край, юноша. {p}Приходи, когда подумаешь.")
+            end
+        end,
+
+        -- шахта: замок на двери («Взлом»), внутри — «Самоцветы»
+        mine = function(s)
+            s:learn("places", "mine", "Заброшенная шахта", "В горах. Вход заколочен, на двери — ржавый замок. Внутри, говорят, полно самоцветов.")
+            if not s:flag("mine_open") then
+                local a = s:ask("grisha", "Вход заколочен, на двери — ржавый замок.", { "Вскрыть замок", "Уйти" })
+                if a ~= 1 then return end
+                local r = s:play("lockpick", { goal = 1, lives = 3, level = 2 })
+                if not r.win then
+                    s:say("grisha", "{shake}Хрусь!{/} Не поддаётся. {p}Потом ещё попробую.")
+                    return
+                end
+                s:flag("mine_open", true)
+                s:say("grisha", "{wave}Щёлк!{/} {p}Темно... и что-то блестит.")
+            end
+            local a = s:ask("bunny", "Смотри, {rainbow}самоцветы{/}! {p}Накопаем?", { "Копать самоцветы", "Уйти" })
+            if a == 1 then
+                local r = s:play("match3", { goal = 1200, moves = 20, prize = { coin = 8 } })
+                if r.win then
+                    s:say("bunny", "{rainbow}Сколько блеска!{/} {p}Купим целый воз морковки!")
+                    if s:flag("mine_tunnel") and s:once("mine_tunnel_found") then
+                        s:say("grisha", "А вот и ход под замок... {p}{shake}завален{/}. Нужна кирка.")
+                        s:journalDone("mine")
+                        s:journal("pickaxe", "Раздобыть кирку и расчистить ход под замок")
+                    end
+                else
+                    s:say("grisha", "Камни, камни... {p}Одни камни.")
+                end
+            end
+        end,
+
+        -- руины: призрак — уговорить (Обаяние) или драться
+        ruins = function(s)
+            s:learn("places", "ruins", "Древние руины", "Колонны и камни на востоке. Говорят, там бродит призрак.")
+            if s:flag("ruins_clear") then
+                local a, ok = s:ask("grisha", "На колонне — старые знаки.", { { "Разобрать знаки", check = { "wits", 9 } }, "Уйти" })
+                if a == 1 and ok then
+                    s:say("grisha", "{accent}«Кто уплывёт на восток, вернётся с запада»{/}. {p}Даже древние знали.")
+                    s:learn("things", "runes", "Знаки на колонне", "«Кто уплывёт на восток, вернётся с запада». Древние знали, что мир круглый.")
+                elseif a == 1 then
+                    s:think("Закорючки... {p}Похоже на следы Кашки.")
+                end
+                return
+            end
+            s:say("ghost", "{wave}Уууу...{/} {p}Кто топчет мои камни?")
+            local a, ok = s:ask("grisha", "Призрак! {p}Что делать?", {
+                { "Заговорить с ним", check = { "charm", 9 } },
+                "Драться!",
+                "Уйти потихоньку",
+            }, { id = "ruins_ghost" })
+            if a == 3 then return end
+            if a == 1 and ok then
+                s:say("ghost", "Со мной... говорят? {p}Триста лет никто не говорил. {p}Возьми, это было моё.")
+                s:give("ring", 1)
+                s:like("bunny", 1)
+            else
+                if a == 1 then
+                    s:say("ghost", "{shake}Уууу!{/} Не заговаривай мне зубы!")
+                end
+                if not worldFight(s, { "ghost", "ghost" }) then return end
+                s:say("grisha", "Растаял... {p}А под камнем — монеты.")
+                s:give("coin", 12)
+            end
+            s:flag("ruins_clear", true)
+        end,
+
+        -- маяк: смотритель, подсказки и «Рыбалка»
+        lighthouse = function(s)
+            s:learn("places", "lighthouse", "Маяк", "Белая башня на северо-восточном мысу. Светит кораблям — и лодке Гриши.")
+            if s:once("lighthouse_hello") then
+                s:say("keeper", "Открыто! {p}Заходи, не стой на ветру.")
+                s:learn("people", "keeper", "Смотритель Нил", "Живёт на маяке, знает все течения и всех рыб. Сверху видит весь мир.")
+                s:say("keeper", "Сверху видать: слизни ползут от замка во все стороны. {p}Король что-то затевает.")
+                s:journalDone("lighthouse")
+            end
+            local a = s:ask("keeper", "Порыбачим с причала? {p}Поймаешь трёх — с меня награда.",
+                { "Порыбачить", "Спросить про замок", "Уйти" })
+            if a == 1 then
+                local r = s:play("fishing", { goal = 3, level = 2, prize = { coin = 6 } })
+                if r.win then
+                    s:say("keeper", "Знатный улов! {p}Держи монеты. И заходи ещё.")
+                else
+                    s:say("keeper", "Ушла рыбка... {p}Тут терпение нужно.")
+                end
+            elseif a == 2 then
+                if s:flag("king_fears_water") then
+                    s:say("keeper", "Боится воды, говоришь? {p}Хе... Тогда лодка — твой лучший друг.")
+                elseif s:flag("mine_tunnel") then
+                    s:say("keeper", "Ход под замок? {p}Кирку спроси в Морковкине — там всё есть.")
+                else
+                    s:say("keeper", "Ворота там крепкие. {p}А у стражника, говорят, слабость — {accent}морковка{/}.")
+                end
+            end
+        end,
     },
 }
 
